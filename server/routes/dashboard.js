@@ -5,7 +5,12 @@ const auth = require('../middleware/auth');
 
 router.get('/', auth, async (req, res) => {
   try {
-    const [totalInvoices, statusCounts, revenueData] = await Promise.all([
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const [totalInvoices, statusCounts, revenueData, todaysAssignments] = await Promise.all([
       Invoice.countDocuments(),
       Invoice.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
       Invoice.aggregate([
@@ -13,30 +18,78 @@ router.get('/', auth, async (req, res) => {
           $group: {
             _id: null,
             totalRevenue: { $sum: '$total' },
-            totalReceived: { $sum: '$advancePaid' },
+            totalReceived: { $sum: '$advancePaid' }, // We'll add totalPaid below
             totalBalance: { $sum: '$balance' },
             totalDiscount: { $sum: '$discount' },
+            sumTotalPaid: { $sum: '$totalPaid' }
           },
         },
       ]),
+      Invoice.countDocuments({
+        eventDates: { $gte: todayStart, $lte: todayEnd }
+      })
     ]);
 
     const statusMap = {};
     statusCounts.forEach(s => { statusMap[s._id] = s.count; });
 
-    const revenue = revenueData[0] || { totalRevenue: 0, totalReceived: 0, totalBalance: 0, totalDiscount: 0 };
+    const revenue = revenueData[0] || { totalRevenue: 0, totalReceived: 0, totalBalance: 0, totalDiscount: 0, sumTotalPaid: 0 };
+    revenue.totalReceived = (revenue.totalReceived || 0) + (revenue.sumTotalPaid || 0);
 
-    // Recent invoices
-    const recentInvoices = await Invoice.find()
+    // 1. Pipeline Invoices (Recent 15)
+    const pipelineInvoices = await Invoice.find()
       .sort({ createdAt: -1 })
+      .limit(15)
+      .select('invoiceNo customer.name eventCategoryName total status eventDates createdAt');
+
+    // 2. Upcoming Schedule (5 events happening today or future)
+    const upcomingSchedule = await Invoice.find({ eventDates: { $gte: todayStart } })
+      .sort({ 'eventDates': 1 })
       .limit(5)
-      .select('invoiceNo customer.name total status balance createdAt');
+      .select('customer.name location eventDates staffingStatus requiredStaff staffAllocated eventCategoryName');
+
+    // 3. Recent Transactions (Generate a mock ledger feed from recent invoices that have payments)
+    const txInvoices = await Invoice.find({
+      $or: [{ advancePaid: { $gt: 0 } }, { totalPaid: { $gt: 0 } }]
+    }).sort({ updatedAt: -1 }).limit(10);
+
+    const recentPayments = [];
+    txInvoices.forEach(inv => {
+      if (inv.advancePaid > 0) {
+        recentPayments.push({
+          id: `${inv._id}_adv`,
+          type: 'income',
+          amount: inv.advancePaid,
+          description: `${inv.customer.name} Advance (${inv.advancePaymentMethod})`,
+          date: new Date(inv.updatedAt).toLocaleDateString(),
+          category: inv.eventCategoryName || 'Service'
+        });
+      }
+      if (inv.totalPaid > 0) {
+        recentPayments.push({
+          id: `${inv._id}_fin`,
+          type: 'income',
+          amount: inv.totalPaid,
+          description: `${inv.customer.name} Final Payment (${inv.totalPaymentMethod})`,
+          date: new Date(inv.updatedAt).toLocaleDateString(),
+          category: inv.eventCategoryName || 'Service'
+        });
+      }
+    });
+
+    // Sort by date descending
+    recentPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     res.json({
       totalInvoices,
       statusMap,
-      ...revenue,
-      recentInvoices,
+      todaysAssignments,
+      totalRevenue: revenue.totalRevenue,
+      totalReceived: revenue.totalReceived,
+      totalBalance: revenue.totalBalance,
+      pipelineInvoices,
+      upcomingSchedule,
+      recentPayments: recentPayments.slice(0, 10),
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

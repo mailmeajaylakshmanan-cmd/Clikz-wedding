@@ -35,20 +35,43 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Try to load real data or fall back to high-end seeded mock data
+    // Load real data from backend
     api.get('/dashboard')
       .then((res) => {
-        // Overlay backend figures on our rich slate/emerald UI
+        const mapStage = { draft: 'Enquiry', sent: 'Confirmed', partial: 'In Progress', paid: 'Completed' };
+        
+        const newPipeline = res.data.pipelineInvoices?.map(inv => ({
+          id: inv._id,
+          stage: mapStage[inv.status] || 'Enquiry',
+          client: inv.customer?.name || 'Unknown',
+          service: inv.eventCategoryName || 'Event Service',
+          date: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).toLocaleDateString() : 'TBD',
+          value: inv.total || 0
+        })) || [];
+
+        const newSchedule = res.data.upcomingSchedule?.map(inv => ({
+          id: inv._id,
+          title: `${inv.customer?.name || 'Unknown'} - ${inv.eventCategoryName || 'Event'}`,
+          time: 'Schedule pending', 
+          location: inv.location || 'TBD',
+          role: inv.staffAllocated?.map(s => s.role).join(', ') || 'Staffing pending',
+          status: inv.staffingStatus || 'Staffing Pending'
+        })) || [];
+
         setData(prev => ({
           ...prev,
-          netProfit: res.data.totalReceived || prev.netProfit,
-          pendingAdvances: res.data.totalBalance || prev.pendingAdvances,
-          activeEvents: res.data.totalInvoices || prev.activeEvents
+          netProfit: res.data.totalReceived || 0,
+          pendingAdvances: res.data.totalBalance || 0,
+          activeEvents: res.data.totalInvoices || 0,
+          todaysAssignments: res.data.todaysAssignments || 0,
+          pipeline: newPipeline.length > 0 ? newPipeline : prev.pipeline, // keep mock if DB empty
+          weeklySchedule: newSchedule.length > 0 ? newSchedule : prev.weeklySchedule,
+          recentTransactions: res.data.recentPayments?.length > 0 ? res.data.recentPayments : prev.recentTransactions
         }));
         setLoading(false);
       })
       .catch(() => {
-        setLoading(false); // Fallback to gorgeous seed dashboard data
+        setLoading(false); // Fallback to mock data on error
       });
   }, []);
 
