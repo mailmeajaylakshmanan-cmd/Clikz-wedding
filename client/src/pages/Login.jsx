@@ -200,13 +200,6 @@ export default function Login() {
               }
             </button>
           </form>
-
-          <div style={styles.signupPrompt}>
-            <span style={styles.signupText}>Don't have an account?</span>{' '}
-            <button onClick={() => navigate('/signup')} style={styles.signupLink}>
-              Sign up
-            </button>
-          </div>
         </div>
 
       </div>

@@ -13,6 +13,16 @@ const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB connected');
+    
+    // Seed admin user if none exists
+    const User = require('./models/User');
+    const bcrypt = require('bcryptjs');
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await User.create({ email: 'admin@clikz.com', password: hashedPassword });
+      console.log('Default admin user created.');
+    }
   } catch (err) {
     console.error('MongoDB error:', err);
   }
