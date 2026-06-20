@@ -22,7 +22,7 @@ export default function Layout() {
   const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  
+
   // Mobile responsiveness states
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -35,12 +35,12 @@ export default function Layout() {
         setIsMobileSidebarOpen(false);
       }
     };
-    
+
     const handleScroll = () => setScrolled(window.scrollY > 10);
 
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleScroll);
-    
+
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleScroll);
@@ -66,10 +66,10 @@ export default function Layout() {
 
   return (
     <div style={styles.shell}>
-      
+
       {/* ── Mobile Sidebar Backdrop Overlay ── */}
       {isMobile && isMobileSidebarOpen && (
-        <div 
+        <div
           onClick={() => setIsMobileSidebarOpen(false)}
           style={styles.mobileBackdrop}
         />
@@ -123,7 +123,7 @@ export default function Layout() {
           </div>
 
           {isMobile && (
-            <button 
+            <button
               onClick={() => setIsMobileSidebarOpen(false)}
               style={styles.closeSidebarBtn}
               aria-label="Close menu"
@@ -188,7 +188,7 @@ export default function Layout() {
         marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 72 : 260),
         transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
-        
+
         {/* Topbar Header */}
         <header style={{
           ...styles.topbar,
@@ -197,7 +197,7 @@ export default function Layout() {
         }}>
           <div style={styles.pageCrumb}>
             {isMobile && (
-              <button 
+              <button
                 onClick={() => setIsMobileSidebarOpen(true)}
                 style={styles.hamburgerBtn}
                 aria-label="Toggle Menu"
@@ -215,7 +215,7 @@ export default function Layout() {
               {!isMobile && <span style={styles.pageSubtitle}>Welcome back, Admin</span>}
             </div>
           </div>
-          
+
           <div style={styles.topbarRight}>
             <button style={styles.tbBtn} aria-label="Notifications">
               <Bell size={16} color="#64748b" strokeWidth={2} />
@@ -235,35 +235,57 @@ export default function Layout() {
           <div style={{ flex: 1 }}>
             <Outlet />
           </div>
-          
-          {/* Simple Instagram Info Footer */}
+
+          {/* Footer */}
           <footer style={styles.footer}>
-            <div style={styles.footerBrand}>
-              <p style={styles.footerTitle}>CLIKZ WEDDING FILMS</p>
-              <p style={styles.footerTagline}>Capturing love. Crafting memories.</p>
-              <p style={styles.footerLocation}>Available across South India • DM for bookings</p>
-            </div>
-            
+            <p style={styles.footerTitle}>CLIKZ WEDDING FILMS</p>
+
             <div style={styles.footerSocials}>
-              <a href="https://instagram.com/clikz_.photography" target="_blank" rel="noreferrer" style={styles.footerLink}>
-                Instagram: @clikz_.photography
+              <a
+                href="https://instagram.com/clikz_.photography"
+                target="_blank"
+                rel="noreferrer"
+                style={styles.footerIconLink}
+                title="Instagram"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
               </a>
-              <span style={styles.footerDot}>•</span>
-              <a href="https://youtube.com/@CLIKZ_FILMS" target="_blank" rel="noreferrer" style={styles.footerLink}>
-                YouTube: @CLIKZ_FILMS
+
+              <a
+                href="https://youtube.com/@CLIKZ_FILMS"
+                target="_blank"
+                rel="noreferrer"
+                style={styles.footerIconLink}
+                title="YouTube"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.5 31.5 0 0 0 0 12a31.5 31.5 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.5 31.5 0 0 0 24 12a31.5 31.5 0 0 0-.5-5.8zM9.6 15.5V8.5L15.8 12z" />
+                </svg>
               </a>
-              <span style={styles.footerDot}>•</span>
-              <a href="https://facebook.com/ClikzFilms" target="_blank" rel="noreferrer" style={styles.footerLink}>
-                Facebook: Clikz Films
+
+              <a
+                href="https://facebook.com/ClikzFilms"
+                target="_blank"
+                rel="noreferrer"
+                style={styles.footerIconLink}
+                title="Facebook"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12z" />
+                </svg>
               </a>
             </div>
-            
-            <div style={styles.footerCopy}>
-              © {new Date().getFullYear()} CLIKZ Wedding Films. All rights reserved.
-            </div>
+
+            <p style={styles.footerCopy}>
+              © {new Date().getFullYear()} CLIKZ Wedding Films
+            </p>
           </footer>
         </div>
-        
+
       </div>
     </div>
   );
@@ -412,9 +434,6 @@ const styles = {
     justifyContent: 'center',
     padding: 6,
     borderRadius: 8,
-    hover: {
-      background: 'rgba(255, 255, 255, 0.05)',
-    }
   },
 
   collapseBtn: {
@@ -598,70 +617,54 @@ const styles = {
     zIndex: 45,
   },
 
+  // ── Footer (light theme, evenly aligned 3-section row) ──
   footer: {
-    marginTop: 'auto',
-    padding: '32px 0 16px',
-    borderTop: '1px solid rgba(226, 232, 240, 0.8)',
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    textAlign: 'center',
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-
-  footerBrand: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '16px',
+    marginTop: 24,
+    padding: '16px 28px',
+    borderRadius: 14,
+    border: '1px solid #e2e8f0',
+    backgroundColor: '#ffffff',
+    boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
   },
 
   footerTitle: {
-    fontSize: 12,
-    fontWeight: 800,
+    fontSize: '13px',
+    fontWeight: 700,
     color: '#0f172a',
-    letterSpacing: '0.08em',
     margin: 0,
-  },
-
-  footerTagline: {
-    fontSize: 11,
-    color: '#f97316',
-    fontStyle: 'italic',
-    margin: 0,
-    fontWeight: 600,
-  },
-
-  footerLocation: {
-    fontSize: 10.5,
-    color: '#64748b',
-    margin: 0,
+    letterSpacing: '0.4px',
   },
 
   footerSocials: {
     display: 'flex',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    gap: '10px',
+  },
+
+  footerIconLink: {
+    display: 'flex',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    fontSize: 11,
-  },
-
-  footerLink: {
-    color: '#0d9488',
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    backgroundColor: '#f1f5f9',
+    border: '1px solid #e2e8f0',
+    color: '#64748b',
     textDecoration: 'none',
-    fontWeight: 500,
-    transition: 'color 0.2s ease',
-  },
-
-  footerDot: {
-    color: '#cbd5e1',
+    transition: 'background-color 0.2s, color 0.2s, border-color 0.2s',
   },
 
   footerCopy: {
-    fontSize: 10,
+    fontSize: '12px',
     color: '#94a3b8',
-    marginTop: 4,
+    margin: 0,
+    whiteSpace: 'nowrap',
   },
 };

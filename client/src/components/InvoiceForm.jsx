@@ -1,12 +1,32 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/axios.js';
-import { 
-  User, Phone, Calendar, MapPin, Plus, Trash2, 
-  Settings, BadgeCheck, Sparkles, Layers, Receipt, 
-  AlertCircle, ShoppingBag
+import {
+  User, Phone, Calendar, MapPin, Plus, Trash2,
+  Settings, BadgeCheck, Sparkles, Layers, Receipt,
+  AlertCircle, ShoppingBag, Hash
 } from 'lucide-react';
 
 const emptyService = { service: '', description: '', price: '', total: 0 };
+
+// "21/05/2026 & 24/06/2026" -> ["2026-05-21", "2026-06-24"] (native <input type="date"> needs ISO)
+function parseEventDateString(str) {
+  if (!str) return [''];
+  const parts = str.split('&').map(function (part) {
+    const trimmed = part.trim();
+    const ddmmyyyy = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (ddmmyyyy) return ddmmyyyy[3] + '-' + ddmmyyyy[2] + '-' + ddmmyyyy[1];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    return '';
+  });
+  return parts.length ? parts : [''];
+}
+
+// "2026-05-21" -> "21/05/2026"
+function toDisplayDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return d + '/' + m + '/' + y;
+}
 
 export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSelect }) {
   const [form, setForm] = useState(function () {
@@ -27,6 +47,9 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       status: 'draft',
       notes: 'Grateful to be part of your celebration.',
       requiredStaff: 0,
+      // checkbox-controlled visibility for the two payment blocks
+      showAdvance: false,
+      showFinal: false,
     };
     if (!initial) return base;
     return {
@@ -36,28 +59,53 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       customer: initial.customer || base.customer,
       services: initial.services?.length ? initial.services : base.services,
       requiredStaff: initial.requiredStaff || 0,
+      // if editing an invoice that already has an amount recorded, open that section by default
+      showAdvance: Number(initial.advancePaid) > 0,
+      showFinal: Number(initial.totalPaid) > 0,
     };
   });
 
   const [eventCategories, setEventCategories] = useState([]);
   const [serviceOptions, setServiceOptions] = useState([]);
-  const [customerSearch, setCustomerSearch] = useState(initial?.customer?.name || '');
-  const [customerSuggestions, setCustomerSuggestions] = useState([]);
-  const customerTimer = useRef(null);
-  const wrapperRef = useRef(null);
+  const [customers, setCustomers] = useState([]);
+  const [eventDates, setEventDates] = useState(function () {
+    return parseEventDateString(initial?.eventDate || '');
+  });
+
+  function syncEventDateString(dates) {
+    const joined = dates.filter(Boolean).map(toDisplayDate).join(' & ');
+    setForm(function (f) { return { ...f, eventDate: joined }; });
+  }
+
+  function updateEventDate(idx, value) {
+    setEventDates(function (dates) {
+      const next = dates.map(function (d, i) { return i === idx ? value : d; });
+      syncEventDateString(next);
+      return next;
+    });
+  }
+
+  function addEventDate() {
+    setEventDates(function (dates) {
+      const next = [...dates, ''];
+      syncEventDateString(next);
+      return next;
+    });
+  }
+
+  function removeEventDate(idx) {
+    setEventDates(function (dates) {
+      const next = dates.filter(function (_, i) { return i !== idx; });
+      const finalDates = next.length ? next : [''];
+      syncEventDateString(finalDates);
+      return finalDates;
+    });
+  }
 
   useEffect(function () {
     api.get('/event-categories').then(function (res) { setEventCategories(res.data); });
-
-    function handleClickOutside(event) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setCustomerSuggestions([]);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return function () {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    // Load the full customer list once — selection is made from this list only.
+    api.get('/customers').then(function (res) { setCustomers(res.data); });
   }, []);
 
   useEffect(function () {
@@ -92,24 +140,23 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     }
   }, [balance, total, form.status, form.advancePaid, form.totalPaid]);
 
-  function searchCustomers(val) {
-    clearTimeout(customerTimer.current);
-    setCustomerSearch(val);
-    if (val.length < 2) { setCustomerSuggestions([]); return; }
-    customerTimer.current = setTimeout(function () {
-      api.get('/customers', { params: { search: val } }).then(function (res) {
-        setCustomerSuggestions(res.data);
-      });
-    }, 300);
-  }
-
-  function selectCustomer(c) {
-    clearTimeout(customerTimer.current);
-    setForm(function (f) { return { ...f, customer: { name: c.name, phone: c.phone } }; });
-    setCustomerSearch(c.name);
-    setCustomerSuggestions([]);
+  // Selecting a customer from the dropdown — this is the ONLY way customer gets set.
+  function handleCustomerSelect(customerId) {
+    if (!customerId) {
+      setForm(function (f) { return { ...f, customer: { name: '', phone: '' } }; });
+      return;
+    }
+    const c = customers.find(function (cu) { return cu._id === customerId; });
+    if (!c) return;
+    setForm(function (f) { return { ...f, customer: { _id: c._id, name: c.name, phone: c.phone } }; });
     if (onCustomerSelect) onCustomerSelect(c);
   }
+
+  // Try to match the current form.customer back to an entry in the loaded list
+  // (handles edit mode, where initial.customer is a snapshot taken at invoice time).
+  const matchedCustomer = customers.find(function (c) {
+    return c._id === form.customer?._id || (form.customer?.phone && c.phone === form.customer.phone);
+  });
 
   function updateService(idx, field, val) {
     setForm(function (f) {
@@ -146,6 +193,20 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     });
   }
 
+  // Toggle the advance-payment block; clears the amount when hidden so it doesn't
+  // silently linger in the total if the user unchecks it.
+  function toggleAdvance(checked) {
+    setForm(function (f) {
+      return { ...f, showAdvance: checked, advancePaid: checked ? f.advancePaid : 0 };
+    });
+  }
+
+  function toggleFinal(checked) {
+    setForm(function (f) {
+      return { ...f, showFinal: checked, totalPaid: checked ? f.totalPaid : 0 };
+    });
+  }
+
   function handleSubmit(e) {
     e.preventDefault();
     const category = eventCategories.find(function (c) { return c._id === form.eventCategory; });
@@ -168,7 +229,18 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl mx-auto">
-      
+
+      {/* Invoice Number strip */}
+      <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+        <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-wider">
+          <Hash size={14} />
+          Invoice Number
+        </div>
+        <span className="font-mono font-bold text-slate-800 text-sm">
+          {initial?.invoiceNumber || initial?.invoiceId || 'Auto-generated on save'}
+        </span>
+      </div>
+
       {/* 1. Customer Details */}
       <div className="card p-6 border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
         <div className="flex items-center gap-2 mb-5">
@@ -177,58 +249,47 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
           </div>
           <h2 className="font-semibold text-slate-800">Customer & Event Details</h2>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Customer Name Autocomplete */}
-          <div className="relative" ref={wrapperRef}>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Customer Name *</label>
+          {/* Customer — dropdown select only, no free typing */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Customer *</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                 <User size={14} />
               </span>
-              <input
-                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
-                value={customerSearch}
-                onChange={function (e) {
-                  searchCustomers(e.target.value);
-                  setForm(function (f) { return { ...f, customer: { ...f.customer, name: e.target.value } }; });
-                }}
-                placeholder="Search or type customer name"
+              <select
+                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%239CA3AF%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
+                value={matchedCustomer?._id || ''}
+                onChange={function (e) { handleCustomerSelect(e.target.value); }}
                 required
-              />
-            </div>
-            
-            {customerSuggestions.length > 0 && (
-              <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-                {customerSuggestions.map(function (c) {
-                  return (
-                    <button
-                      key={c._id}
-                      type="button"
-                      onClick={function () { selectCustomer(c); }}
-                      className="w-full text-left px-4 py-2 hover:bg-orange-50 border-b border-slate-50 last:border-0 transition-colors"
-                    >
-                      <p className="font-medium text-slate-800 text-sm">{c.name}</p>
-                      <p className="text-xs text-slate-400 font-mono mt-0.5">{c.phone}</p>
-                    </button>
-                  );
+              >
+                <option value="">Select a customer</option>
+                {customers.map(function (c) {
+                  return <option key={c._id} value={c._id}>{c.name} — {c.phone}</option>;
                 })}
-              </div>
+              </select>
+            </div>
+            {form.customer?.name && !matchedCustomer && (
+              <p className="text-[11px] text-amber-600 mt-1.5 flex items-center gap-1">
+                <AlertCircle size={11} />
+                Previously billed to "{form.customer.name}" — not found in current customer list.
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Phone *</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Phone</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <Phone size={14} />
               </span>
               <input
-                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
+                className="input pl-9 bg-slate-50 text-slate-500 cursor-not-allowed"
                 value={form.customer.phone}
-                onChange={function (e) { setForm(function (f) { return { ...f, customer: { ...f.customer, phone: e.target.value } }; }); }}
-                placeholder="9842209736"
-                required
+                placeholder="Auto-filled from customer selection"
+                readOnly
+                disabled
               />
             </div>
           </div>
@@ -269,18 +330,46 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Event Date (Supports range/labels)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <Calendar size={14} />
-              </span>
-              <input
-                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
-                value={form.eventDate}
-                onChange={function (e) { setForm(function (f) { return { ...f, eventDate: e.target.value }; }); }}
-                placeholder="21/05/2026 & 24/06/2026"
-              />
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Event Date(s)</label>
+            <div className="space-y-2">
+              {eventDates.map(function (d, idx) {
+                return (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                        <Calendar size={14} />
+                      </span>
+                      <input
+                        type="date"
+                        className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
+                        value={d}
+                        onChange={function (e) { updateEventDate(idx, e.target.value); }}
+                      />
+                    </div>
+                    {eventDates.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={function () { removeEventDate(idx); }}
+                        className="p-1.5 text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
+                        title="Remove date"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+            <button
+              type="button"
+              onClick={addEventDate}
+              className="flex items-center gap-1 text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 font-bold px-2.5 py-1 rounded-lg text-[11px] mt-2 transition-colors"
+            >
+              <Plus size={12} /> Add another date
+            </button>
+            {form.eventDate && (
+              <p className="text-[11px] text-slate-400 mt-1.5">Saved as: {form.eventDate}</p>
+            )}
           </div>
 
           <div>
@@ -394,10 +483,10 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
             </tbody>
           </table>
         </div>
-        
-        <button 
-          type="button" 
-          onClick={addService} 
+
+        <button
+          type="button"
+          onClick={addService}
           className="flex items-center gap-1 text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 font-bold px-3 py-1.5 rounded-lg text-xs mt-3 transition-colors"
         >
           <Plus size={14} /> Add Service Row
@@ -406,7 +495,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
 
       {/* 3. Payments & Settings Panel */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
+
         {/* Left Side: Receipt & Payments */}
         <div className="card p-6 border-l-4 border-l-orange-500 hover:shadow-md transition-shadow flex flex-col justify-between">
           <div>
@@ -416,13 +505,13 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               </div>
               <h2 className="font-semibold text-slate-800">Billing Breakdown</h2>
             </div>
-            
+
             <div className="space-y-3.5 text-sm text-slate-600">
               <div className="flex justify-between items-center">
                 <span>Subtotal Amount</span>
                 <span className="font-semibold text-slate-800 font-mono">₹{subTotal.toLocaleString('en-IN')}</span>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <span>Discount applied</span>
                 <div className="relative w-32">
@@ -442,25 +531,34 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                 <span className="text-orange-600 text-lg font-extrabold font-mono">₹{total.toLocaleString('en-IN')}</span>
               </div>
 
-              {/* Advance Payment Field */}
+              {/* Advance Payment — checkbox-gated */}
               <div className="border-t border-slate-100 pt-3 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-slate-700">Advance Paid</span>
-                  <div className="relative w-32">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
-                    <input
-                      type="number"
-                      className="input pl-7 text-right focus:ring-orange-500/20 focus:border-orange-500 font-mono py-1"
-                      value={form.advancePaid}
-                      onChange={function(e) { setForm(function(f) { return { ...f, advancePaid: e.target.value }; }); }}
-                      min="0"
-                    />
-                  </div>
-                </div>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.showAdvance}
+                    onChange={function (e) { toggleAdvance(e.target.checked); }}
+                    className="w-4 h-4 accent-orange-500 rounded border-slate-300 cursor-pointer"
+                  />
+                  <span className="font-medium text-slate-700">Advance Payment Received</span>
+                </label>
 
-                {Number(form.advancePaid) > 0 && (
-                  <div className="bg-orange-50/30 border border-orange-100/50 rounded-xl p-3 space-y-2.5 animate-in slide-in-from-top-2 duration-200">
-                    <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">Advance Receipt Info</p>
+                {form.showAdvance && (
+                  <div className="bg-orange-50/30 border border-orange-100/50 rounded-xl p-3 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">Amount Paid</span>
+                      <div className="relative w-32">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                        <input
+                          type="number"
+                          className="input pl-7 text-right focus:ring-orange-500/20 focus:border-orange-500 font-mono py-1"
+                          value={form.advancePaid}
+                          onChange={function (e) { setForm(function (f) { return { ...f, advancePaid: e.target.value }; }); }}
+                          min="0"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Receipt Date</label>
@@ -468,7 +566,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                           type="date"
                           className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500"
                           value={form.advancePaymentDate}
-                          onChange={function(e) { setForm(function(f) { return { ...f, advancePaymentDate: e.target.value }; }); }}
+                          onChange={function (e) { setForm(function (f) { return { ...f, advancePaymentDate: e.target.value }; }); }}
                         />
                       </div>
                       <div>
@@ -476,7 +574,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                         <select
                           className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500"
                           value={form.advancePaymentMethod}
-                          onChange={function(e) { setForm(function(f) { return { ...f, advancePaymentMethod: e.target.value }; }); }}
+                          onChange={function (e) { setForm(function (f) { return { ...f, advancePaymentMethod: e.target.value }; }); }}
                         >
                           <option value="Cash">Cash</option>
                           <option value="UPI">UPI</option>
@@ -488,25 +586,34 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                 )}
               </div>
 
-              {/* Final Settlement Field */}
+              {/* Final / Settlement Payment — checkbox-gated */}
               <div className="border-t border-slate-100 pt-3 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-slate-700">2nd / Final Paid</span>
-                  <div className="relative w-32">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
-                    <input
-                      type="number"
-                      className="input pl-7 text-right focus:ring-orange-500/20 focus:border-orange-500 font-mono py-1"
-                      value={form.totalPaid}
-                      onChange={function(e) { setForm(function(f) { return { ...f, totalPaid: e.target.value }; }); }}
-                      min="0"
-                    />
-                  </div>
-                </div>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.showFinal}
+                    onChange={function (e) { toggleFinal(e.target.checked); }}
+                    className="w-4 h-4 accent-orange-500 rounded border-slate-300 cursor-pointer"
+                  />
+                  <span className="font-medium text-slate-700">2nd / Final Payment Received</span>
+                </label>
 
-                {Number(form.totalPaid) > 0 && (
-                  <div className="bg-orange-50/30 border border-orange-100/50 rounded-xl p-3 space-y-2.5 animate-in slide-in-from-top-2 duration-200">
-                    <p className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">Settlement Receipt Info</p>
+                {form.showFinal && (
+                  <div className="bg-orange-50/30 border border-orange-100/50 rounded-xl p-3 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">Amount Paid</span>
+                      <div className="relative w-32">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                        <input
+                          type="number"
+                          className="input pl-7 text-right focus:ring-orange-500/20 focus:border-orange-500 font-mono py-1"
+                          value={form.totalPaid}
+                          onChange={function (e) { setForm(function (f) { return { ...f, totalPaid: e.target.value }; }); }}
+                          min="0"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Settlement Date</label>
@@ -514,7 +621,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                           type="date"
                           className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500"
                           value={form.totalPaymentDate}
-                          onChange={function(e) { setForm(function(f) { return { ...f, totalPaymentDate: e.target.value }; }); }}
+                          onChange={function (e) { setForm(function (f) { return { ...f, totalPaymentDate: e.target.value }; }); }}
                         />
                       </div>
                       <div>
@@ -522,7 +629,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                         <select
                           className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500"
                           value={form.totalPaymentMethod}
-                          onChange={function(e) { setForm(function(f) { return { ...f, totalPaymentMethod: e.target.value }; }); }}
+                          onChange={function (e) { setForm(function (f) { return { ...f, totalPaymentMethod: e.target.value }; }); }}
                         >
                           <option value="Cash">Cash</option>
                           <option value="UPI">UPI</option>
@@ -564,7 +671,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               </div>
               <h2 className="font-semibold text-slate-800">Invoice Status & Settings</h2>
             </div>
-            
+
             {/* Custom Interactive Status buttons */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-2">Invoice Status</label>
@@ -584,7 +691,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                       onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}
                       className="sr-only peer"
                     />
-                    <div className="text-center py-2.5 text-xs font-semibold text-slate-500 border border-slate-200 rounded-xl transition-all peer-checked:bg-orange-55 peer-checked:bg-orange-50 peer-checked:text-orange-700 peer-checked:border-orange-200 hover:bg-orange-50/30 peer-checked:ring-2 peer-checked:ring-orange-500/10">
+                    <div className="text-center py-2.5 text-xs font-semibold text-slate-500 border border-slate-200 rounded-xl transition-all peer-checked:bg-orange-50 peer-checked:text-orange-700 peer-checked:border-orange-200 hover:bg-orange-50/30 peer-checked:ring-2 peer-checked:ring-orange-500/10">
                       {item.label}
                     </div>
                   </label>
@@ -615,11 +722,11 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               />
             </div>
           </div>
-          
+
           <div className="flex justify-end pt-5">
-            <button 
-              type="submit" 
-              disabled={loading} 
+            <button
+              type="submit"
+              disabled={loading}
               className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-orange-100 hover:shadow-orange-200 active:scale-95 text-center text-sm disabled:opacity-50"
             >
               {loading ? 'Saving invoice data...' : 'Save & Compile Bill'}
