@@ -11,7 +11,7 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.studioId = decoded.studioId; 
+    req.studioId = decoded.studioId || 'default_studio'; 
     req.user = decoded;
     next();
   } catch (error) {

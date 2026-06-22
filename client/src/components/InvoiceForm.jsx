@@ -254,45 +254,55 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Customer — dropdown select only, no free typing */}
+          {/* Customer — input with datalist (select or type new) */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Customer *</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                 <User size={14} />
               </span>
-              <select
-                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%239CA3AF%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
-                value={matchedCustomer?._id || ''}
-                onChange={function (e) { handleCustomerSelect(e.target.value); }}
+              <input
+                list="customer-list"
+                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
+                value={form.customer.name}
+                onChange={function (e) {
+                  const val = e.target.value;
+                  const matched = customers.find(c => c.name === val || c.name + ' — ' + c.phone === val);
+                  if (matched) {
+                    setForm(f => ({ ...f, customer: { _id: matched._id, name: matched.name, phone: matched.phone } }));
+                  } else {
+                    setForm(f => ({ ...f, customer: { ...f.customer, _id: undefined, name: val } }));
+                  }
+                }}
+                placeholder="Type or select a customer"
                 required
-              >
-                <option value="">Select a customer</option>
-                {customers.map(function (c) {
-                  return <option key={c._id} value={c._id}>{c.name} — {c.phone}</option>;
-                })}
-              </select>
+              />
+              <datalist id="customer-list">
+                {customers.map(c => (
+                  <option key={c._id} value={c.name} />
+                ))}
+              </datalist>
             </div>
             {form.customer?.name && !matchedCustomer && (
               <p className="text-[11px] text-amber-600 mt-1.5 flex items-center gap-1">
                 <AlertCircle size={11} />
-                Previously billed to "{form.customer.name}" — not found in current customer list.
+                New customer. Their details will be saved on this invoice.
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Phone</label>
+            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Phone *</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <Phone size={14} />
               </span>
               <input
-                className="input pl-9 bg-slate-50 text-slate-500 cursor-not-allowed"
+                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
                 value={form.customer.phone}
-                placeholder="Auto-filled from customer selection"
-                readOnly
-                disabled
+                onChange={function (e) { setForm(f => ({ ...f, customer: { ...f.customer, phone: e.target.value } })); }}
+                placeholder="Phone number"
+                required
               />
             </div>
           </div>

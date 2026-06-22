@@ -111,7 +111,7 @@ invoiceSchema.pre('save', async function (next) {
 invoiceSchema.index({ studioId: 1, invoiceNo: 1 }, { unique: true });
 invoiceSchema.index({ status: 1, createdAt: -1, 'customer.name': 1, invoiceNo: 1 });
 invoiceSchema.index({ studioId: 1, eventDates: 1 });
-invoiceSchema.index({ 'staffAllocated.employeeId': 1, eventDates: 1 });
+invoiceSchema.index({ 'staffAllocated.employeeId': 1 });
 
 invoiceSchema.pre('find', function() {
   this.where({ isDeleted: { $ne: true } });
