@@ -59,6 +59,7 @@ export default function Layout() {
     } catch (e) {
       console.error('Logout error:', e);
     }
+    localStorage.removeItem('isAuthenticated');
     navigate('/login');
   };
 

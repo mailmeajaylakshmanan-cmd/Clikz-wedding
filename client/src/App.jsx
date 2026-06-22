@@ -13,8 +13,8 @@ import MasterCustomer from './pages/MasterCustomer.jsx';
 import MasterCrew from './pages/MasterCrew.jsx';
 
 function PrivateRoute({ children }) {
-  const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
 export default function App() {
