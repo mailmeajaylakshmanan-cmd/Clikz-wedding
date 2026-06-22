@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   IndianRupee, Calendar, Users, Activity,
@@ -7,89 +6,86 @@ import {
 } from 'lucide-react';
 import api from '../api/axios.js';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useQuery } from '@tanstack/react-query';
+
+const defaultMockData = {
+  netProfit: 185000,
+  pendingAdvances: 65000,
+  todaysAssignments: 3,
+  activeEvents: 8,
+  weeklySchedule: [
+    { id: 1, title: 'Ananya & Vikram Pre-Shoot', time: '06:00 AM - 06:00 PM', location: 'Bandra Fort, Mumbai', role: 'Drone + Cinematic', status: 'Confirmed', day: 15 },
+    { id: 2, title: 'Siddharth & Riya Reception', time: '04:00 PM - 11:30 PM', location: 'ITC Grand Chola, Chennai', role: 'Traditional Photo', status: 'In Progress', day: 18 },
+    { id: 3, title: 'Meera & Arjun Sangeet', time: '05:30 PM - 11:00 PM', location: 'Sheraton Grand, Bangalore', role: 'Candid Photography', status: 'Confirmed', day: 22 }
+  ],
+  recentTransactions: [
+    { id: 1, type: 'income', amount: 50000, description: 'Priya & Karthik Advance (UPI)', date: 'Today, 2:30 PM', category: 'Wedding Films' },
+    { id: 2, type: 'expense', amount: 8000, description: 'Memory Cards & Battery Buy', date: 'Today, 11:00 AM', category: 'Equipment' },
+    { id: 3, type: 'income', amount: 85000, description: 'Sneha & Rahul Full Settlement', date: 'Yesterday', category: 'Photography' },
+    { id: 4, type: 'expense', amount: 15000, description: 'Freelancer Assistant Day Rate', date: 'June 17', category: 'Staffing' }
+  ],
+  pipeline: [
+    { id: 1, stage: 'Enquiry', client: 'Meera & Arjun', service: 'Engagement Film', date: 'Sept 02, 2026', value: 45000 },
+    { id: 2, stage: 'Confirmed', client: 'Priya & Karthik', service: 'Full Wedding Package', date: 'Aug 15, 2026', value: 150000 },
+    { id: 3, stage: 'In Progress', client: 'Ananya & Vikram', service: 'Pre-Wedding Shoot', date: 'Sept 10, 2026', value: 65000 },
+    { id: 4, stage: 'Completed', client: 'Sneha & Rahul', service: 'Reception Coverage', date: 'July 20, 2026', value: 85000 }
+  ],
+  monthlyRevenueData: [
+    { month: 'Jan', revenue: 120000 },
+    { month: 'Feb', revenue: 150000 },
+    { month: 'Mar', revenue: 180000 },
+    { month: 'Apr', revenue: 130000 },
+    { month: 'May', revenue: 210000 },
+    { month: 'Jun', revenue: 185000 },
+    { month: 'Jul', revenue: 240000 },
+    { month: 'Aug', revenue: 290000 },
+    { month: 'Sep', revenue: 160000 },
+    { month: 'Oct', revenue: 310000 },
+    { month: 'Nov', revenue: 350000 },
+    { month: 'Dec', revenue: 420000 }
+  ]
+};
+
 export default function Dashboard() {
-  const [data, setData] = useState({
-    netProfit: 185000,
-    pendingAdvances: 65000,
-    todaysAssignments: 3,
-    activeEvents: 8,
-    weeklySchedule: [
-      { id: 1, title: 'Ananya & Vikram Pre-Shoot', time: '06:00 AM - 06:00 PM', location: 'Bandra Fort, Mumbai', role: 'Drone + Cinematic', status: 'Confirmed', day: 15 },
-      { id: 2, title: 'Siddharth & Riya Reception', time: '04:00 PM - 11:30 PM', location: 'ITC Grand Chola, Chennai', role: 'Traditional Photo', status: 'In Progress', day: 18 },
-      { id: 3, title: 'Meera & Arjun Sangeet', time: '05:30 PM - 11:00 PM', location: 'Sheraton Grand, Bangalore', role: 'Candid Photography', status: 'Confirmed', day: 22 }
-    ],
-    recentTransactions: [
-      { id: 1, type: 'income', amount: 50000, description: 'Priya & Karthik Advance (UPI)', date: 'Today, 2:30 PM', category: 'Wedding Films' },
-      { id: 2, type: 'expense', amount: 8000, description: 'Memory Cards & Battery Buy', date: 'Today, 11:00 AM', category: 'Equipment' },
-      { id: 3, type: 'income', amount: 85000, description: 'Sneha & Rahul Full Settlement', date: 'Yesterday', category: 'Photography' },
-      { id: 4, type: 'expense', amount: 15000, description: 'Freelancer Assistant Day Rate', date: 'June 17', category: 'Staffing' }
-    ],
-    pipeline: [
-      { id: 1, stage: 'Enquiry', client: 'Meera & Arjun', service: 'Engagement Film', date: 'Sept 02, 2026', value: 45000 },
-      { id: 2, stage: 'Confirmed', client: 'Priya & Karthik', service: 'Full Wedding Package', date: 'Aug 15, 2026', value: 150000 },
-      { id: 3, stage: 'In Progress', client: 'Ananya & Vikram', service: 'Pre-Wedding Shoot', date: 'Sept 10, 2026', value: 65000 },
-      { id: 4, stage: 'Completed', client: 'Sneha & Rahul', service: 'Reception Coverage', date: 'July 20, 2026', value: 85000 }
-    ],
-    monthlyRevenueData: [
-      { month: 'Jan', revenue: 120000 },
-      { month: 'Feb', revenue: 150000 },
-      { month: 'Mar', revenue: 180000 },
-      { month: 'Apr', revenue: 130000 },
-      { month: 'May', revenue: 210000 },
-      { month: 'Jun', revenue: 185000 },
-      { month: 'Jul', revenue: 240000 },
-      { month: 'Aug', revenue: 290000 },
-      { month: 'Sep', revenue: 160000 },
-      { month: 'Oct', revenue: 310000 },
-      { month: 'Nov', revenue: 350000 },
-      { month: 'Dec', revenue: 420000 }
-    ]
-  });  
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboardMetrics'],
+    queryFn: () => api.get('/dashboard').then(res => {
+      const mapStage = { draft: 'Enquiry', sent: 'Confirmed', partial: 'In Progress', paid: 'Completed' };
+      
+      const newPipeline = res.data.pipelineInvoices?.map(inv => ({
+        id: inv._id,
+        stage: mapStage[inv.status] || 'Enquiry',
+        client: inv.customer?.name || 'Unknown',
+        service: inv.eventCategoryName || 'Event Service',
+        date: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).toLocaleDateString() : 'TBD',
+        value: inv.total || 0
+      })) || [];
 
-  useEffect(() => {
-    // Load real data from backend
-    api.get('/dashboard')
-      .then((res) => {
-        const mapStage = { draft: 'Enquiry', sent: 'Confirmed', partial: 'In Progress', paid: 'Completed' };
-        
-        const newPipeline = res.data.pipelineInvoices?.map(inv => ({
-          id: inv._id,
-          stage: mapStage[inv.status] || 'Enquiry',
-          client: inv.customer?.name || 'Unknown',
-          service: inv.eventCategoryName || 'Event Service',
-          date: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).toLocaleDateString() : 'TBD',
-          value: inv.total || 0
-        })) || [];
+      const newSchedule = res.data.upcomingSchedule?.map(inv => ({
+        id: inv._id,
+        title: `${inv.customer?.name || 'Unknown'} - ${inv.eventCategoryName || 'Event'}`,
+        time: 'Schedule pending', 
+        location: inv.location || 'TBD',
+        role: inv.staffAllocated?.map(s => s.role).join(', ') || 'Staffing pending',
+        status: inv.staffingStatus || 'Staffing Pending',
+        day: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).getDate() : Math.floor(Math.random() * 28) + 1
+      })) || [];
 
-        const newSchedule = res.data.upcomingSchedule?.map(inv => ({
-          id: inv._id,
-          title: `${inv.customer?.name || 'Unknown'} - ${inv.eventCategoryName || 'Event'}`,
-          time: 'Schedule pending', 
-          location: inv.location || 'TBD',
-          role: inv.staffAllocated?.map(s => s.role).join(', ') || 'Staffing pending',
-          status: inv.staffingStatus || 'Staffing Pending',
-          day: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).getDate() : Math.floor(Math.random() * 28) + 1
-        })) || [];
+      return {
+        netProfit: res.data.totalReceived || 0,
+        pendingAdvances: res.data.totalBalance || 0,
+        activeEvents: res.data.totalInvoices || 0,
+        todaysAssignments: res.data.todaysAssignments || 0,
+        pipeline: newPipeline.length > 0 ? newPipeline : defaultMockData.pipeline,
+        weeklySchedule: newSchedule.length > 0 ? newSchedule : defaultMockData.weeklySchedule,
+        recentTransactions: res.data.recentPayments?.length > 0 ? res.data.recentPayments : defaultMockData.recentTransactions,
+        monthlyRevenueData: defaultMockData.monthlyRevenueData
+      };
+    }).catch(() => defaultMockData),
+    staleTime: 5 * 60 * 1000 // Cache for 5 mins
+  });
 
-        setData(prev => ({
-          ...prev,
-          netProfit: res.data.totalReceived || 0,
-          pendingAdvances: res.data.totalBalance || 0,
-          activeEvents: res.data.totalInvoices || 0,
-          todaysAssignments: res.data.todaysAssignments || 0,
-          pipeline: newPipeline.length > 0 ? newPipeline : prev.pipeline, // keep mock if DB empty
-          weeklySchedule: newSchedule.length > 0 ? newSchedule : prev.weeklySchedule,
-          recentTransactions: res.data.recentPayments?.length > 0 ? res.data.recentPayments : prev.recentTransactions
-        }));
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false); // Fallback to mock data on error
-      });
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64 text-slate-400">
         <Activity className="animate-spin text-emerald-500 mr-2" size={20} />
@@ -97,6 +93,7 @@ export default function Dashboard() {
       </div>
     );
   }
+
 
   return (
     <div className="space-y-6">

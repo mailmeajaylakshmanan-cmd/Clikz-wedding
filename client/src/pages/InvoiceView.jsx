@@ -98,7 +98,12 @@ export default function InvoiceView() {
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
-      const pdfBlob = await html2pdf().set(opt).from(el).outputPdf('blob');
+      const pdfBlob = await new Promise((resolve, reject) => {
+        // Yield to the main thread to allow "Generating PDF..." UI to render
+        setTimeout(() => {
+          html2pdf().set(opt).from(el).outputPdf('blob').then(resolve).catch(reject);
+        }, 50);
+      });
       const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({

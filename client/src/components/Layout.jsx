@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import clikzLogo from '../assets/clikz_logo.png';
+import api from '../api/axios.js';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -52,8 +53,12 @@ export default function Layout() {
     setIsMobileSidebarOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
     navigate('/login');
   };
 

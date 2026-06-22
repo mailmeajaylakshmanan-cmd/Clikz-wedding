@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Invoice = require('../models/Invoice');
 const auth = require('../middleware/auth');
+const { secureFind, secureFindOne } = require('../utils/queryHelper');
 
 // GET all invoices
 router.get('/', auth, async (req, res) => {
@@ -17,12 +18,12 @@ router.get('/', auth, async (req, res) => {
         { 'customer.phone': { $regex: search, $options: 'i' } },
       ];
     }
-    const invoices = await Invoice.find(query)
+    const invoices = await secureFind(Invoice, query, req)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .lean();
-    const total = await Invoice.countDocuments(query);
+    const total = await Invoice.countDocuments({ ...query, studioId: req.studioId, isDeleted: false });
     res.json({ invoices, total, pages: Math.ceil(total / limit) });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -32,7 +33,7 @@ router.get('/', auth, async (req, res) => {
 // GET single invoice
 router.get('/:id', auth, async (req, res) => {
   try {
-    const invoice = await Invoice.findById(req.params.id).populate('eventCategory').lean();
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req).populate('eventCategory').lean();
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     res.json(invoice);
   } catch (err) {
@@ -43,7 +44,7 @@ router.get('/:id', auth, async (req, res) => {
 // POST create invoice
 router.post('/', auth, async (req, res) => {
   try {
-    const invoice = new Invoice(req.body);
+    const invoice = new Invoice({ ...req.body, studioId: req.studioId });
     await invoice.save();
     res.status(201).json(invoice);
   } catch (err) {
@@ -54,7 +55,7 @@ router.post('/', auth, async (req, res) => {
 // PUT update invoice
 router.put('/:id', auth, async (req, res) => {
   try {
-    const invoice = await Invoice.findById(req.params.id);
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req);
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     
     // Assign fields
@@ -71,7 +72,7 @@ router.put('/:id', auth, async (req, res) => {
 router.patch('/:id/status', auth, async (req, res) => {
   try {
     const { status } = req.body;
-    const invoice = await Invoice.findById(req.params.id);
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req);
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     
     invoice.status = status;
@@ -85,7 +86,7 @@ router.patch('/:id/status', auth, async (req, res) => {
 // DELETE invoice
 router.delete('/:id', auth, async (req, res) => {
   try {
-    await Invoice.findByIdAndDelete(req.params.id);
+    await Invoice.findOneAndDelete({ _id: req.params.id, studioId: req.studioId });
     res.json({ message: 'Invoice deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -3,11 +3,12 @@ const router = express.Router();
 const Invoice = require('../models/Invoice');
 const Employee = require('../models/Employee');
 const auth = require('../middleware/auth');
+const { secureFind, secureFindOne } = require('../utils/queryHelper');
 
 // GET pending staffing events (where staffAllocated.length < requiredStaff)
 router.get('/pending', auth, async (req, res) => {
   try {
-    const pendingEvents = await Invoice.find({
+    const pendingEvents = await secureFind(Invoice, {
       requiredStaff: { $gt: 0 },
       $expr: { $lt: [{ $size: '$staffAllocated' }, '$requiredStaff'] }
     }).sort({ createdAt: -1 }).lean();
@@ -26,12 +27,12 @@ router.post('/assign', auth, async (req, res) => {
       return res.status(400).json({ message: 'invoiceId and employeeId are required' });
     }
 
-    const invoice = await Invoice.findById(invoiceId);
+    const invoice = await secureFindOne(Invoice, { _id: invoiceId }, req);
     if (!invoice) {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    const employee = await Employee.findById(employeeId).lean();
+    const employee = await secureFindOne(Employee, { _id: employeeId }, req).lean();
     if (!employee) {
       return res.status(404).json({ message: 'Crew member not found' });
     }
@@ -46,11 +47,11 @@ router.post('/assign', auth, async (req, res) => {
 
     // Conflict Check: Is the employee already assigned to another event on overlapping eventDates?
     if (invoice.eventDates && invoice.eventDates.length > 0) {
-      const conflict = await Invoice.findOne({
+      const conflict = await secureFindOne(Invoice, {
         _id: { $ne: invoiceId },
         eventDates: { $in: invoice.eventDates },
         'staffAllocated.employeeId': employeeId
-      }).lean();
+      }, req).select('eventDates _id invoiceNo').lean();
 
       if (conflict) {
         return res.status(400).json({
@@ -58,11 +59,11 @@ router.post('/assign', auth, async (req, res) => {
         });
       }
     } else if (invoice.eventDate) {
-      const conflict = await Invoice.findOne({
+      const conflict = await secureFindOne(Invoice, {
         _id: { $ne: invoiceId },
         eventDate: invoice.eventDate,
         'staffAllocated.employeeId': employeeId
-      }).lean();
+      }, req).select('eventDates _id invoiceNo').lean();
 
       if (conflict) {
         return res.status(400).json({
@@ -93,7 +94,7 @@ router.post('/unassign', auth, async (req, res) => {
       return res.status(400).json({ message: 'invoiceId and employeeId are required' });
     }
 
-    const invoice = await Invoice.findById(invoiceId);
+    const invoice = await secureFindOne(Invoice, { _id: invoiceId }, req);
     if (!invoice) {
       return res.status(404).json({ message: 'Event not found' });
     }

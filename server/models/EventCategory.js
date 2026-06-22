@@ -1,9 +1,19 @@
 const mongoose = require('mongoose');
 
 const eventCategorySchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
+  studioId: { type: String, required: true, default: 'default_studio' },
+  isDeleted: { type: Boolean, default: false },
+  name: { type: String, required: true },
   showTerms: { type: Boolean, default: true },
   termsAndConditions: { type: String, default: '' },
 }, { timestamps: true });
+
+eventCategorySchema.pre('find', function() {
+  this.where({ isDeleted: false });
+});
+
+eventCategorySchema.pre('findOne', function() {
+  this.where({ isDeleted: false });
+});
 
 module.exports = mongoose.model('EventCategory', eventCategorySchema);

@@ -1,12 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -19,8 +21,12 @@ const connectDB = async () => {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongooseInstance) => {
-      console.log('MongoDB connected (cached)');
+    const opts = {
+      bufferCommands: false,
+      maxPoolSize: 10,
+    };
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+      console.log('MongoDB connected (cached with pool config)');
       return mongooseInstance;
     });
   }
@@ -33,7 +39,7 @@ const connectDB = async () => {
     const userCount = await User.countDocuments();
     if (userCount === 0) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
-      await User.create({ email: 'admin@clikz.com', password: hashedPassword });
+      await User.create({ email: 'admin@clikz.com', password: hashedPassword, studioId: 'default_studio' });
       console.log('Default admin user created.');
     }
   } catch (err) {
@@ -57,6 +63,7 @@ app.use('/api/event-categories', require('./routes/eventCategories'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/employees', require('./routes/employees'));
 app.use('/api/dispatch', require('./routes/dispatch'));
+app.use('/api/media', require('./routes/media'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', app: 'CLIKZ Billing' }));

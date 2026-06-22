@@ -3,21 +3,34 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from '../api/axios.js';
 import { UserPlus, Calendar, Info, Trash2, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const Dispatcher = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchParam = searchParams.get('search') || '';
   const navigate = useNavigate();
 
-  const [tasks, setTasks] = useState([]);
-  const [crew, setCrew] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState(searchParam);
   const [countdown, setCountdown] = useState(5);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['dispatcherData'],
+    queryFn: async () => {
+      const [invRes, crewRes] = await Promise.all([
+        axios.get('/invoices?staffingStatus[$ne]=Fully Staffed'),
+        axios.get('/employees?status=Active')
+      ]);
+      return {
+        tasks: invRes.data.invoices || invRes.data || [],
+        crew: crewRes.data || []
+      };
+    },
+    staleTime: 5 * 60 * 1000
+  });
+
+  const tasks = data?.tasks || [];
+  const crew = data?.crew || [];
 
   useEffect(() => {
     setSearchQuery(searchParams.get('search') || '');
@@ -40,22 +53,7 @@ const Dispatcher = () => {
     }
   }, [loading, tasks.length, navigate]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Phase 2: The Filter - Get invoices where staffing is not complete
-      const [invRes, crewRes] = await Promise.all([
-        axios.get('/invoices?staffingStatus[$ne]=Fully Staffed'),
-        axios.get('/employees?status=Active')
-      ]);
-      setTasks(invRes.data.invoices || invRes.data);
-      setCrew(crewRes.data);
-    } catch (err) {
-      toast.error("Failed to load dispatcher data");
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const handleAssign = async (invoiceId, employeeId, date) => {
     if (!employeeId) return;
@@ -63,7 +61,9 @@ const Dispatcher = () => {
       // Phase 3: Conflict Check happens on backend
       await axios.post('/dispatch/assign', { invoiceId, employeeId, date });
       toast.success("Crew assigned successfully");
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ['dispatcherData'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
     } catch (err) {
       toast.error(err.response?.data?.message || "Assignment Error");
     }
@@ -74,7 +74,9 @@ const Dispatcher = () => {
     try {
       await axios.post('/dispatch/unassign', { invoiceId, employeeId });
       toast.success("Crew unassigned successfully");
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ['dispatcherData'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
     } catch (err) {
       toast.error(err.response?.data?.message || "Unassignment Error");
     }

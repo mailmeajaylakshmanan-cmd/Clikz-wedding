@@ -19,7 +19,9 @@ function parseDateString(str) {
 }
 
 const invoiceSchema = new mongoose.Schema({
-  invoiceNo: { type: String, unique: true },
+  studioId: { type: String, required: true, default: 'default_studio' },
+  isDeleted: { type: Boolean, default: false },
+  invoiceNo: { type: String, required: true },
   date: { type: Date, default: Date.now },
   customer: {
     name: { type: String, required: true },
@@ -104,6 +106,19 @@ invoiceSchema.pre('save', async function (next) {
   }
 
   next();
+});
+
+invoiceSchema.index({ studioId: 1, invoiceNo: 1 }, { unique: true });
+invoiceSchema.index({ status: 1, createdAt: -1, 'customer.name': 1, invoiceNo: 1 });
+invoiceSchema.index({ studioId: 1, eventDates: 1 });
+invoiceSchema.index({ 'staffAllocated.employeeId': 1, eventDates: 1 });
+
+invoiceSchema.pre('find', function() {
+  this.where({ isDeleted: false });
+});
+
+invoiceSchema.pre('findOne', function() {
+  this.where({ isDeleted: false });
 });
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

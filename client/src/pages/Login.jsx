@@ -28,7 +28,6 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await api.post('/auth/login', form);
-      localStorage.setItem('token', res.data.token);
       toast.success('Welcome back!');
       navigate('/');
     } catch {

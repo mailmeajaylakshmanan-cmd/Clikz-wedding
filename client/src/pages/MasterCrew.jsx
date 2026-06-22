@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import { Plus, Edit3, Trash2, X } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function MasterCrew() {
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  
+  const { data: employees = [], isLoading: loading } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => api.get('/employees').then(res => res.data),
+    staleTime: 5 * 60 * 1000
+  });
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
@@ -14,20 +20,7 @@ export default function MasterCrew() {
   const [status, setStatus] = useState('Active');
   const [editId, setEditId] = useState(null);
 
-  function fetchEmployees() {
-    setLoading(true);
-    api.get('/employees').then(function (res) {
-      setEmployees(res.data);
-      setLoading(false);
-    }).catch(err => {
-      toast.error('Failed to load crew members');
-      setLoading(false);
-    });
-  }
 
-  useEffect(function () {
-    fetchEmployees();
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -44,7 +37,7 @@ export default function MasterCrew() {
         toast.success('Crew member added');
       }
       handleCloseModal();
-      fetchEmployees();
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error saving crew member');
     }
@@ -82,7 +75,7 @@ export default function MasterCrew() {
     try {
       await api.delete('/employees/' + id);
       toast.success('Crew member deleted');
-      fetchEmployees();
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error deleting crew member');
     }

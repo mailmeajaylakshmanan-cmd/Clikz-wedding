@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import { Plus, Edit3, Trash2, X } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function MasterCustomer() {
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  
+  const { data: customers = [], isLoading: loading } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => api.get('/customers').then(res => res.data),
+    staleTime: 5 * 60 * 1000
+  });
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
@@ -14,20 +20,7 @@ export default function MasterCustomer() {
   const [address, setAddress] = useState('');
   const [editId, setEditId] = useState(null);
 
-  function fetchCustomers() {
-    setLoading(true);
-    api.get('/customers').then(function (res) {
-      setCustomers(res.data);
-      setLoading(false);
-    }).catch(err => {
-      toast.error('Failed to load customers');
-      setLoading(false);
-    });
-  }
 
-  useEffect(function () {
-    fetchCustomers();
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -42,7 +35,7 @@ export default function MasterCustomer() {
         toast.success('Customer added');
       }
       handleCancelEdit();
-      fetchCustomers();
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error saving customer');
     }
@@ -80,7 +73,7 @@ export default function MasterCustomer() {
     try {
       await api.delete('/customers/' + id);
       toast.success('Deleted');
-      fetchCustomers();
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error deleting customer');
     }

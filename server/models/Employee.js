@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
 const employeeSchema = new mongoose.Schema({
+  studioId: { type: String, required: true, default: 'default_studio' },
+  isDeleted: { type: Boolean, default: false },
   name: { type: String, required: true },
   role: { type: String, required: true },
   contact: { type: String, default: '' },
@@ -16,6 +18,14 @@ employeeSchema.pre('save', function(next) {
     this.contact = this.phone;
   }
   next();
+});
+
+employeeSchema.pre('find', function() {
+  this.where({ isDeleted: false });
+});
+
+employeeSchema.pre('findOne', function() {
+  this.where({ isDeleted: false });
 });
 
 module.exports = mongoose.model('Employee', employeeSchema);

@@ -1,11 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import { Plus, Edit3, Trash2, X } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function MasterEvent() {
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  
+  const { data: categories = [], isLoading: loading } = useQuery({
+    queryKey: ['eventCategories'],
+    queryFn: () => api.get('/event-categories').then(res => res.data),
+    staleTime: 5 * 60 * 1000
+  });
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
@@ -13,20 +19,7 @@ export default function MasterEvent() {
   const [termsAndConditions, setTermsAndConditions] = useState('');
   const [editId, setEditId] = useState(null);
 
-  function fetchCategories() {
-    setLoading(true);
-    api.get('/event-categories').then(function (res) {
-      setCategories(res.data);
-      setLoading(false);
-    }).catch(err => {
-      toast.error('Failed to load event categories');
-      setLoading(false);
-    });
-  }
 
-  useEffect(function () {
-    fetchCategories();
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -41,7 +34,7 @@ export default function MasterEvent() {
         toast.success('Event Category added');
       }
       handleCancelEdit();
-      fetchCategories();
+      queryClient.invalidateQueries({ queryKey: ['eventCategories'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error saving category');
     }
@@ -76,7 +69,7 @@ export default function MasterEvent() {
     try {
       await api.delete('/event-categories/' + id);
       toast.success('Deleted');
-      fetchCategories();
+      queryClient.invalidateQueries({ queryKey: ['eventCategories'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error deleting category');
     }

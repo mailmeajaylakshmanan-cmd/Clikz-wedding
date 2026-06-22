@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Invoice = require('../models/Invoice');
 const auth = require('../middleware/auth');
+const { secureFind } = require('../utils/queryHelper');
 
 router.get('/', auth, async (req, res) => {
   try {
@@ -11,9 +12,13 @@ router.get('/', auth, async (req, res) => {
     todayEnd.setHours(23, 59, 59, 999);
 
     const [totalInvoices, statusCounts, revenueData, todaysAssignments] = await Promise.all([
-      Invoice.countDocuments(),
-      Invoice.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Invoice.countDocuments({ studioId: req.studioId, isDeleted: false }),
       Invoice.aggregate([
+        { $match: { studioId: req.studioId, isDeleted: false } },
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]),
+      Invoice.aggregate([
+        { $match: { studioId: req.studioId, isDeleted: false } },
         {
           $group: {
             _id: null,
@@ -26,6 +31,8 @@ router.get('/', auth, async (req, res) => {
         },
       ]),
       Invoice.countDocuments({
+        studioId: req.studioId,
+        isDeleted: false,
         eventDates: { $gte: todayStart, $lte: todayEnd }
       })
     ]);
@@ -37,21 +44,21 @@ router.get('/', auth, async (req, res) => {
     revenue.totalReceived = (revenue.totalReceived || 0) + (revenue.sumTotalPaid || 0);
 
     // 1. Pipeline Invoices (Recent 15)
-    const pipelineInvoices = await Invoice.find()
+    const pipelineInvoices = await secureFind(Invoice, {}, req)
       .sort({ createdAt: -1 })
       .limit(15)
       .select('invoiceNo customer.name eventCategoryName total status eventDates createdAt')
       .lean();
 
     // 2. Upcoming Schedule (5 events happening today or future)
-    const upcomingSchedule = await Invoice.find({ eventDates: { $gte: todayStart } })
+    const upcomingSchedule = await secureFind(Invoice, { eventDates: { $gte: todayStart } }, req)
       .sort({ 'eventDates': 1 })
       .limit(5)
       .select('customer.name location eventDates staffingStatus requiredStaff staffAllocated eventCategoryName')
       .lean();
 
     // 3. Recent Transactions (Generate a mock ledger feed from recent invoices that have payments)
-    const txInvoices = await Invoice.find({
+    const txInvoices = await secureFind(Invoice, {
       $or: [{ advancePaid: { $gt: 0 } }, { totalPaid: { $gt: 0 } }]
     }).sort({ updatedAt: -1 }).limit(10).lean();
 

@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import { Plus, Search, Eye, Edit3, Trash2, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 function fmt(n) {
   return '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -29,62 +30,39 @@ function formatDate(dateStr) {
 
 export default function InvoiceList() {
   const navigate = useNavigate();
-  const [invoices, setInvoices] = useState([]);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('All Statuses');
-  const [loading, setLoading] = useState(true);
   
   // Payment modal state
-  const [selectedPaymentInvoice, setSelectedPaymentInvoice] = useState(null);
+  const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState(null);
 
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    staffingPending: 0,
-    balanceDue: 0,
-    fullyStaffed: 0
+  const { data, isLoading: loading, refetch } = useQuery({
+    queryKey: ['invoices'],
+    queryFn: () => api.get('/invoices', { params: { limit: 10000 } }).then(res => {
+      const allInvoices = res.data.invoices || res.data || [];
+      const totalRevenue = allInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+      const balanceDue = allInvoices.reduce((sum, inv) => sum + (inv.balance || 0), 0);
+      const fullyStaffed = allInvoices.filter(inv => inv.staffingStatus === 'Fully Staffed').length;
+      const staffingPending = allInvoices.filter(inv => inv.staffingStatus !== 'Fully Staffed').length;
+
+      return {
+        allInvoices,
+        stats: { totalRevenue, balanceDue, fullyStaffed, staffingPending }
+      };
+    }),
+    staleTime: 5 * 60 * 1000
   });
 
-  function fetchInvoices() {
-    setLoading(true);
-    api.get('/invoices', { params: { limit: 10000 } }).then(function (res) {
-      const allInvoices = res.data.invoices || res.data || [];
-      setInvoices(allInvoices);
-      
-      // Calculate global stats
-      const totalRev = allInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
-      const balDue = allInvoices.reduce((sum, inv) => sum + (inv.balance || 0), 0);
-      const fullyStaffedCount = allInvoices.filter(inv => inv.staffingStatus === 'Fully Staffed').length;
-      const pendingStaffCount = allInvoices.filter(inv => inv.staffingStatus !== 'Fully Staffed').length;
-
-      setStats({
-        totalRevenue: totalRev,
-        balanceDue: balDue,
-        fullyStaffed: fullyStaffedCount,
-        staffingPending: pendingStaffCount
-      });
-
-      if (selectedPaymentInvoice) {
-        const matching = allInvoices.find(i => i._id === selectedPaymentInvoice._id);
-        if (matching) setSelectedPaymentInvoice(matching);
-      }
-
-      setLoading(false);
-    }).catch(() => {
-      toast.error('Failed to load invoices');
-      setLoading(false);
-    });
-  }
-
-  useEffect(function () {
-    fetchInvoices();
-  }, []);
+  const invoices = data?.allInvoices || [];
+  const stats = data?.stats || { totalRevenue: 0, staffingPending: 0, balanceDue: 0, fullyStaffed: 0 };
+  const selectedPaymentInvoice = selectedPaymentInvoiceId ? invoices.find(i => i._id === selectedPaymentInvoiceId) : null;
 
   async function deleteInvoice(id) {
     if (!confirm('Delete this invoice?')) return;
     try {
       await api.delete('/invoices/' + id);
       toast.success('Invoice deleted');
-      fetchInvoices();
+      refetch();
     } catch {
       toast.error('Failed to delete invoice');
     }
@@ -242,7 +220,7 @@ export default function InvoiceList() {
                         {inv.status}
                       </span>
                       <button
-                        onClick={() => setSelectedPaymentInvoice(inv)}
+                        onClick={() => setSelectedPaymentInvoiceId(inv._id)}
                         className="p-1 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
                         title="View Payment details"
                       >
@@ -275,7 +253,7 @@ export default function InvoiceList() {
                 <p className="text-xs text-slate-400 mt-0.5">{selectedPaymentInvoice.invoiceNo} • {selectedPaymentInvoice.customer?.name}</p>
               </div>
               <button 
-                onClick={() => setSelectedPaymentInvoice(null)} 
+                onClick={() => setSelectedPaymentInvoiceId(null)} 
                 className="text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X size={20} />
@@ -346,7 +324,7 @@ export default function InvoiceList() {
 
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end">
               <button 
-                onClick={() => setSelectedPaymentInvoice(null)}
+                onClick={() => setSelectedPaymentInvoiceId(null)}
                 className="bg-white hover:bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg border border-slate-200 transition-colors text-xs"
               >
                 Close

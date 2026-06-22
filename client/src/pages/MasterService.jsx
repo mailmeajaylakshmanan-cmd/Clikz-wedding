@@ -1,12 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import { Plus, Edit3, Trash2, X } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function MasterService() {
-  const [services, setServices] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['servicesData'],
+    queryFn: async () => {
+      const [servicesRes, categoriesRes] = await Promise.all([
+        api.get('/services'),
+        api.get('/event-categories')
+      ]);
+      return {
+        services: servicesRes.data || [],
+        categories: categoriesRes.data || []
+      };
+    },
+    staleTime: 5 * 60 * 1000
+  });
+
+  const services = data?.services || [];
+  const categories = data?.categories || [];
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
@@ -14,24 +31,7 @@ export default function MasterService() {
   const [descriptionsStr, setDescriptionsStr] = useState('');
   const [editId, setEditId] = useState(null);
 
-  function fetchData() {
-    setLoading(true);
-    Promise.all([
-      api.get('/services'),
-      api.get('/event-categories')
-    ]).then(function ([servicesRes, categoriesRes]) {
-      setServices(servicesRes.data);
-      setCategories(categoriesRes.data);
-      setLoading(false);
-    }).catch(err => {
-      toast.error('Failed to load data');
-      setLoading(false);
-    });
-  }
 
-  useEffect(function () {
-    fetchData();
-  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -57,7 +57,7 @@ export default function MasterService() {
         toast.success('Service added');
       }
       handleCancelEdit();
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ['servicesData'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error saving service');
     }
@@ -92,7 +92,7 @@ export default function MasterService() {
     try {
       await api.delete('/services/' + id);
       toast.success('Deleted');
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ['servicesData'] });
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error deleting service');
     }

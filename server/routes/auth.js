@@ -12,10 +12,19 @@ router.post('/register', async (req, res) => {
     if (existingUser) return res.status(400).json({ message: 'User already exists' });
     
     const hashedPassword = await bcrypt.hash(password, 10);
+    // Assign a new studioId for new registrations or let mongoose default to 'default_studio'
     const user = await User.create({ email: email.toLowerCase().trim(), password: hashedPassword });
     
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, email: user.email });
+    const token = jwt.sign({ id: user._id, email: user.email, studioId: user.studioId }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
+
+    res.status(201).json({ email: user.email, studioId: user.studioId });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error during registration' });
@@ -34,12 +43,29 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ message: 'Invalid credentials' });
     
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, email: user.email });
+    const token = jwt.sign({ id: user._id, email: user.email, studioId: user.studioId }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
+
+    res.json({ email: user.email, studioId: user.studioId });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
   }
+});
+
+// POST /api/auth/logout
+router.post('/logout', (req, res) => {
+  res.cookie('token', '', {
+    httpOnly: true,
+    expires: new Date(0)
+  });
+  res.json({ message: 'Logged out successfully' });
 });
 
 module.exports = router;

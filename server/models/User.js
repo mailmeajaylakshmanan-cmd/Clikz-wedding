@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+  studioId: { type: String, required: true, default: 'default_studio' },
+  isDeleted: { type: Boolean, default: false },
   email: {
     type: String,
     required: true,
@@ -13,5 +15,13 @@ const userSchema = new mongoose.Schema({
     required: true
   }
 }, { timestamps: true });
+
+userSchema.pre('find', function() {
+  this.where({ isDeleted: false });
+});
+
+userSchema.pre('findOne', function() {
+  this.where({ isDeleted: false });
+});
 
 module.exports = mongoose.model('User', userSchema);
