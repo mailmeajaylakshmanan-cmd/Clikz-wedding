@@ -17,11 +17,11 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 userSchema.pre('find', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 userSchema.pre('findOne', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 module.exports = mongoose.model('User', userSchema);

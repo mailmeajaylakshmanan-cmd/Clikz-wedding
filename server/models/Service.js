@@ -9,11 +9,11 @@ const serviceSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 serviceSchema.pre('find', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 serviceSchema.pre('findOne', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 module.exports = mongoose.model('Service', serviceSchema);

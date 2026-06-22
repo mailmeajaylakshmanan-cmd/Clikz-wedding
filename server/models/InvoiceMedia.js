@@ -8,11 +8,11 @@ const invoiceMediaSchema = new mongoose.Schema({
 
 // Prevent global accidental leaks
 invoiceMediaSchema.pre('find', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 invoiceMediaSchema.pre('findOne', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 module.exports = mongoose.model('InvoiceMedia', invoiceMediaSchema);

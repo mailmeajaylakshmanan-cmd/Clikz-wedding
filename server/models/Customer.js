@@ -13,11 +13,11 @@ const customerSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 customerSchema.pre('find', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 customerSchema.pre('findOne', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 module.exports = mongoose.model('Customer', customerSchema);

@@ -114,11 +114,11 @@ invoiceSchema.index({ studioId: 1, eventDates: 1 });
 invoiceSchema.index({ 'staffAllocated.employeeId': 1, eventDates: 1 });
 
 invoiceSchema.pre('find', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 invoiceSchema.pre('findOne', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

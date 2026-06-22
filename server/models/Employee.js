@@ -21,11 +21,11 @@ employeeSchema.pre('save', function(next) {
 });
 
 employeeSchema.pre('find', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 employeeSchema.pre('findOne', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 module.exports = mongoose.model('Employee', employeeSchema);

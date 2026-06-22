@@ -9,11 +9,11 @@ const eventCategorySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 eventCategorySchema.pre('find', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 eventCategorySchema.pre('findOne', function() {
-  this.where({ isDeleted: false });
+  this.where({ isDeleted: { $ne: true } });
 });
 
 module.exports = mongoose.model('EventCategory', eventCategorySchema);
