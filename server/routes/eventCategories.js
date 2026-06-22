@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 
 router.get('/', auth, async (req, res) => {
   try {
-    const categories = await EventCategory.find().sort({ name: 1 });
+    const categories = await EventCategory.find().sort({ name: 1 }).lean();
     res.json(categories);
   } catch (err) {
     res.status(500).json({ message: err.message });

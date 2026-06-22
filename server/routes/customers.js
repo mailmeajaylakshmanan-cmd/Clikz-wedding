@@ -10,7 +10,7 @@ router.get('/', auth, async (req, res) => {
     const query = search
       ? { $or: [{ name: { $regex: search, $options: 'i' } }, { phone: { $regex: search, $options: 'i' } }] }
       : {};
-    const customers = await Customer.find(query).sort({ name: 1 }).limit(50);
+    const customers = await Customer.find(query).sort({ name: 1 }).limit(50).lean();
     res.json(customers);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -20,7 +20,7 @@ router.get('/', auth, async (req, res) => {
 // POST create customer
 router.post('/', auth, async (req, res) => {
   try {
-    const existing = await Customer.findOne({ phone: req.body.phone });
+    const existing = await Customer.findOne({ phone: req.body.phone }).lean();
     if (existing) return res.status(400).json({ message: 'Customer with this phone already exists' });
     const customer = new Customer(req.body);
     await customer.save();

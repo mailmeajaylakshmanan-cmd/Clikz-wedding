@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 // GET all employees
 router.get('/', auth, async (req, res) => {
   try {
-    const employees = await Employee.find().sort({ name: 1 });
+    const employees = await Employee.find().sort({ name: 1 }).lean();
     res.json(employees);
   } catch (err) {
     res.status(500).json({ message: err.message });

@@ -10,7 +10,7 @@ router.get('/pending', auth, async (req, res) => {
     const pendingEvents = await Invoice.find({
       requiredStaff: { $gt: 0 },
       $expr: { $lt: [{ $size: '$staffAllocated' }, '$requiredStaff'] }
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).lean();
     
     res.json(pendingEvents);
   } catch (err) {
@@ -31,7 +31,7 @@ router.post('/assign', auth, async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    const employee = await Employee.findById(employeeId);
+    const employee = await Employee.findById(employeeId).lean();
     if (!employee) {
       return res.status(404).json({ message: 'Crew member not found' });
     }
@@ -50,7 +50,7 @@ router.post('/assign', auth, async (req, res) => {
         _id: { $ne: invoiceId },
         eventDates: { $in: invoice.eventDates },
         'staffAllocated.employeeId': employeeId
-      });
+      }).lean();
 
       if (conflict) {
         return res.status(400).json({
@@ -62,7 +62,7 @@ router.post('/assign', auth, async (req, res) => {
         _id: { $ne: invoiceId },
         eventDate: invoice.eventDate,
         'staffAllocated.employeeId': employeeId
-      });
+      }).lean();
 
       if (conflict) {
         return res.status(400).json({

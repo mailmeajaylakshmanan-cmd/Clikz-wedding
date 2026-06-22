@@ -20,7 +20,8 @@ router.get('/', auth, async (req, res) => {
     const invoices = await Invoice.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(Number(limit));
+      .limit(Number(limit))
+      .lean();
     const total = await Invoice.countDocuments(query);
     res.json({ invoices, total, pages: Math.ceil(total / limit) });
   } catch (err) {
@@ -31,7 +32,7 @@ router.get('/', auth, async (req, res) => {
 // GET single invoice
 router.get('/:id', auth, async (req, res) => {
   try {
-    const invoice = await Invoice.findById(req.params.id).populate('eventCategory');
+    const invoice = await Invoice.findById(req.params.id).populate('eventCategory').lean();
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     res.json(invoice);
   } catch (err) {

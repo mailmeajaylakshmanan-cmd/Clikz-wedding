@@ -40,18 +40,20 @@ router.get('/', auth, async (req, res) => {
     const pipelineInvoices = await Invoice.find()
       .sort({ createdAt: -1 })
       .limit(15)
-      .select('invoiceNo customer.name eventCategoryName total status eventDates createdAt');
+      .select('invoiceNo customer.name eventCategoryName total status eventDates createdAt')
+      .lean();
 
     // 2. Upcoming Schedule (5 events happening today or future)
     const upcomingSchedule = await Invoice.find({ eventDates: { $gte: todayStart } })
       .sort({ 'eventDates': 1 })
       .limit(5)
-      .select('customer.name location eventDates staffingStatus requiredStaff staffAllocated eventCategoryName');
+      .select('customer.name location eventDates staffingStatus requiredStaff staffAllocated eventCategoryName')
+      .lean();
 
     // 3. Recent Transactions (Generate a mock ledger feed from recent invoices that have payments)
     const txInvoices = await Invoice.find({
       $or: [{ advancePaid: { $gt: 0 } }, { totalPaid: { $gt: 0 } }]
-    }).sort({ updatedAt: -1 }).limit(10);
+    }).sort({ updatedAt: -1 }).limit(10).lean();
 
     const recentPayments = [];
     txInvoices.forEach(inv => {

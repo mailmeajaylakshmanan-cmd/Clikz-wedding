@@ -8,13 +8,26 @@ const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
 app.use(express.json());
 
+const MONGODB_URI = process.env.MONGODB_URI;
+
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI).then((mongooseInstance) => {
+      console.log('MongoDB connected (cached)');
+      return mongooseInstance;
+    });
+  }
+  cached.conn = await cached.promise;
+  
+  // Seed admin user if none exists
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('MongoDB connected');
-    
-    // Seed admin user if none exists
     const User = require('./models/User');
     const bcrypt = require('bcryptjs');
     const userCount = await User.countDocuments();
@@ -24,8 +37,10 @@ const connectDB = async () => {
       console.log('Default admin user created.');
     }
   } catch (err) {
-    console.error('MongoDB error:', err);
+    console.error('Seed error:', err);
   }
+
+  return cached.conn;
 };
 
 app.use(async (req, res, next) => {
