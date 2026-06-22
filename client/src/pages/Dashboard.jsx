@@ -14,9 +14,9 @@ export default function Dashboard() {
     todaysAssignments: 3,
     activeEvents: 8,
     weeklySchedule: [
-      { id: 1, title: 'Ananya & Vikram Pre-Shoot', time: '06:00 AM - 06:00 PM', location: 'Bandra Fort, Mumbai', role: 'Drone + Cinematic', status: 'Confirmed' },
-      { id: 2, title: 'Siddharth & Riya Reception', time: '04:00 PM - 11:30 PM', location: 'ITC Grand Chola, Chennai', role: 'Traditional Photo', status: 'In Progress' },
-      { id: 3, title: 'Meera & Arjun Sangeet', time: '05:30 PM - 11:00 PM', location: 'Sheraton Grand, Bangalore', role: 'Candid Photography', status: 'Confirmed' }
+      { id: 1, title: 'Ananya & Vikram Pre-Shoot', time: '06:00 AM - 06:00 PM', location: 'Bandra Fort, Mumbai', role: 'Drone + Cinematic', status: 'Confirmed', day: 15 },
+      { id: 2, title: 'Siddharth & Riya Reception', time: '04:00 PM - 11:30 PM', location: 'ITC Grand Chola, Chennai', role: 'Traditional Photo', status: 'In Progress', day: 18 },
+      { id: 3, title: 'Meera & Arjun Sangeet', time: '05:30 PM - 11:00 PM', location: 'Sheraton Grand, Bangalore', role: 'Candid Photography', status: 'Confirmed', day: 22 }
     ],
     recentTransactions: [
       { id: 1, type: 'income', amount: 50000, description: 'Priya & Karthik Advance (UPI)', date: 'Today, 2:30 PM', category: 'Wedding Films' },
@@ -68,7 +68,8 @@ export default function Dashboard() {
           time: 'Schedule pending', 
           location: inv.location || 'TBD',
           role: inv.staffAllocated?.map(s => s.role).join(', ') || 'Staffing pending',
-          status: inv.staffingStatus || 'Staffing Pending'
+          status: inv.staffingStatus || 'Staffing Pending',
+          day: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).getDate() : Math.floor(Math.random() * 28) + 1
         })) || [];
 
         setData(prev => ({
@@ -233,26 +234,40 @@ export default function Dashboard() {
           
           {['Enquiry', 'Confirmed', 'In Progress', 'Completed'].map((stage) => {
             const items = data.pipeline.filter(p => p.stage === stage);
+            const getStageColors = (s) => {
+              switch(s) {
+                case 'Enquiry': return 'bg-amber-50/50 border-amber-100 text-amber-700 decoration-amber-300';
+                case 'Confirmed': return 'bg-blue-50/50 border-blue-100 text-blue-700 decoration-blue-300';
+                case 'In Progress': return 'bg-indigo-50/50 border-indigo-100 text-indigo-700 decoration-indigo-300';
+                case 'Completed': return 'bg-emerald-50/50 border-emerald-100 text-emerald-700 decoration-emerald-300';
+                default: return 'bg-slate-50 border-slate-100 text-slate-600 decoration-slate-300';
+              }
+            };
+            const colors = getStageColors(stage);
+
             return (
-              <div key={stage} className="bg-slate-50/70 border border-slate-100/60 rounded-xl p-4 flex flex-col justify-between">
+              <div key={stage} className={`border rounded-xl p-4 flex flex-col justify-between ${colors}`}>
                 <div>
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">{stage}</span>
-                    <span className="text-[11px] font-bold bg-slate-200/60 text-slate-600 px-1.5 py-0.5 rounded-full">{items.length}</span>
+                  <div className="flex items-center justify-between border-b border-inherit pb-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider">{stage}</span>
+                    <span className="text-[11px] font-bold bg-white/60 px-2 py-0.5 rounded-full shadow-sm">{items.length}</span>
                   </div>
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {items.map(item => (
-                      <div key={item.id} className="bg-white border border-slate-100 rounded-lg p-3 shadow-xs hover:border-emerald-300 transition-colors">
-                        <p className="text-sm font-semibold text-slate-800">{item.client}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{item.service}</p>
-                        <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-50">
-                          <span className="text-[10px] font-medium text-slate-400">{item.date}</span>
-                          <span className="text-[11px] font-bold text-slate-700">₹{item.value.toLocaleString('en-IN')}</span>
+                      <div key={item.id} className="bg-white rounded-lg p-3 shadow-sm border border-white hover:border-inherit transition-all hover:shadow-md cursor-pointer relative overflow-hidden group">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent to-transparent group-hover:from-inherit group-hover:to-inherit opacity-50"></div>
+                        <p className="text-sm font-bold text-slate-800 truncate">{item.client}</p>
+                        <p className="text-[11px] text-slate-500 font-medium mt-0.5 truncate">{item.service}</p>
+                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-50">
+                          <span className="text-[10px] font-semibold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">{item.date}</span>
+                          <span className="text-[11px] font-extrabold text-slate-700">₹{item.value.toLocaleString('en-IN')}</span>
                         </div>
                       </div>
                     ))}
                     {items.length === 0 && (
-                      <p className="text-xs text-slate-400 italic py-6 text-center">Empty stage</p>
+                      <div className="border-2 border-dashed border-inherit/30 rounded-lg py-6 flex items-center justify-center">
+                        <p className="text-xs font-medium opacity-60">Empty stage</p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -266,45 +281,63 @@ export default function Dashboard() {
       {/* Split view: Schedule (Left) vs Ledger Feed (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Left Column: Weekly Event Schedule */}
-        <div className="lg:col-span-2 bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
+        {/* Left Column: Event Schedule Calendar */}
+        <div className="lg:col-span-2 bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-800 text-sm uppercase tracking-wider">Weekly Event Schedule</h2>
+            <h2 className="font-semibold text-slate-800 text-sm uppercase tracking-wider flex items-center gap-2">
+              <Calendar size={16} className="text-emerald-500" />
+              Event Schedule Calendar
+            </h2>
             <Link to="/dispatcher" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors hover:underline">
               Manage Dispatcher →
             </Link>
           </div>
-          <div className="divide-y divide-slate-100">
-            {data.weeklySchedule.map((sched) => (
-              <div key={sched.id} className="p-5 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
-                <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                  <Calendar size={18} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{sched.title}</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      sched.status === 'In Progress' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
-                    }`}>
-                      {sched.status}
-                    </span>
+          <div className="p-5 flex-1 bg-slate-50/30">
+            <div className="grid grid-cols-7 gap-1.5 h-full">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <div key={d} className="text-center text-[10px] font-bold text-slate-400 py-1 uppercase tracking-widest">{d}</div>
+              ))}
+              {Array.from({ length: 30 }, (_, i) => {
+                const day = i + 1;
+                const dayEvents = data.weeklySchedule.filter(s => s.day === day || (!s.day && [15, 18, 22].includes(day)));
+                const hasEvent = dayEvents.length > 0;
+                
+                return (
+                  <div 
+                    key={day} 
+                    className={`aspect-square rounded-xl flex flex-col items-center justify-center relative border-2 transition-all ${
+                      hasEvent 
+                        ? 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50 hover:border-emerald-400 cursor-pointer shadow-sm z-10 scale-[1.02]' 
+                        : 'border-transparent bg-white hover:border-slate-200 cursor-default'
+                    } group`}
+                  >
+                    <span className={`text-sm font-bold ${hasEvent ? 'text-emerald-700' : 'text-slate-600'}`}>{day}</span>
+                    
+                    {hasEvent && (
+                      <div className="absolute bottom-2 flex gap-1">
+                        {dayEvents.map((e, ei) => (
+                          <div key={ei} className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm"></div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Hover Tooltip */}
+                    {hasEvent && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                        {dayEvents.map((e, ei) => (
+                          <div key={ei} className="mb-2 last:mb-0 border-b border-slate-700 last:border-0 pb-2 last:pb-0 text-left">
+                            <p className="font-bold text-emerald-400 truncate">{e.title}</p>
+                            <p className="text-[10px] text-slate-300 mt-0.5 flex items-center gap-1"><MapPin size={10}/> {e.location}</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1"><Clock size={10}/> {e.time}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-y-1 gap-x-4 text-xs text-slate-500">
-                    <span className="flex items-center">
-                      <Clock size={12} className="mr-1 text-slate-400" /> {sched.time}
-                    </span>
-                    <span className="flex items-center">
-                      <MapPin size={12} className="mr-1 text-slate-400" /> {sched.location}
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <span className="inline-block text-[11px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
-                      Role: {sched.role}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </div>
           </div>
         </div>
 

@@ -5,6 +5,9 @@ import {
   Settings, BadgeCheck, Sparkles, Layers, Receipt,
   AlertCircle, ShoppingBag, Hash
 } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { format, parseISO } from 'date-fns';
 
 const emptyService = { service: '', description: '', price: '', total: 0 };
 
@@ -336,14 +339,18 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                 return (
                   <div key={idx} className="flex items-center gap-2">
                     <div className="relative flex-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10">
                         <Calendar size={14} />
                       </span>
-                      <input
-                        type="date"
-                        className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
-                        value={d}
-                        onChange={function (e) { updateEventDate(idx, e.target.value); }}
+                      <DatePicker
+                        selected={d ? (typeof d === 'string' ? parseISO(d) : d) : null}
+                        onChange={function (date) { 
+                           updateEventDate(idx, date ? format(date, 'yyyy-MM-dd') : ''); 
+                        }}
+                        dateFormat="dd/MM/yyyy"
+                        className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500 w-full"
+                        placeholderText="Select date"
+                        wrapperClassName="w-full"
                       />
                     </div>
                     {eventDates.length > 1 && (
@@ -562,11 +569,12 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Receipt Date</label>
-                        <input
-                          type="date"
-                          className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500"
-                          value={form.advancePaymentDate}
-                          onChange={function (e) { setForm(function (f) { return { ...f, advancePaymentDate: e.target.value }; }); }}
+                        <DatePicker
+                          selected={form.advancePaymentDate ? parseISO(form.advancePaymentDate) : null}
+                          onChange={function (date) { setForm(function (f) { return { ...f, advancePaymentDate: date ? format(date, 'yyyy-MM-dd') : '' }; }); }}
+                          dateFormat="dd/MM/yyyy"
+                          className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full"
+                          wrapperClassName="w-full"
                         />
                       </div>
                       <div>
@@ -617,11 +625,12 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Settlement Date</label>
-                        <input
-                          type="date"
-                          className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500"
-                          value={form.totalPaymentDate}
-                          onChange={function (e) { setForm(function (f) { return { ...f, totalPaymentDate: e.target.value }; }); }}
+                        <DatePicker
+                          selected={form.totalPaymentDate ? parseISO(form.totalPaymentDate) : null}
+                          onChange={function (date) { setForm(function (f) { return { ...f, totalPaymentDate: date ? format(date, 'yyyy-MM-dd') : '' }; }); }}
+                          dateFormat="dd/MM/yyyy"
+                          className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full"
+                          wrapperClassName="w-full"
                         />
                       </div>
                       <div>
