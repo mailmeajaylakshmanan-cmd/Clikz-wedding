@@ -10,7 +10,7 @@ import clikzLogo from '../assets/clikz_logo.png';
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/invoices', label: 'Master Invoice', icon: FileText },
-  { to: '/dispatcher', label: 'Dispatcher', icon: Film },
+  // { to: '/dispatcher', label: 'Dispatcher', icon: Film },
   { to: '/master-event', label: 'Master Event', icon: Calendar },
   { to: '/master-service', label: 'Master Service', icon: Briefcase },
   { to: '/master-customer', label: 'Master Customer', icon: User },
