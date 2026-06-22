@@ -6,7 +6,7 @@ import {
   MapPin, Phone, MessageSquare
 } from 'lucide-react';
 import api from '../api/axios.js';
-
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 export default function Dashboard() {
   const [data, setData] = useState({
     netProfit: 185000,
@@ -29,9 +29,22 @@ export default function Dashboard() {
       { id: 2, stage: 'Confirmed', client: 'Priya & Karthik', service: 'Full Wedding Package', date: 'Aug 15, 2026', value: 150000 },
       { id: 3, stage: 'In Progress', client: 'Ananya & Vikram', service: 'Pre-Wedding Shoot', date: 'Sept 10, 2026', value: 65000 },
       { id: 4, stage: 'Completed', client: 'Sneha & Rahul', service: 'Reception Coverage', date: 'July 20, 2026', value: 85000 }
+    ],
+    monthlyRevenueData: [
+      { month: 'Jan', revenue: 120000 },
+      { month: 'Feb', revenue: 150000 },
+      { month: 'Mar', revenue: 180000 },
+      { month: 'Apr', revenue: 130000 },
+      { month: 'May', revenue: 210000 },
+      { month: 'Jun', revenue: 185000 },
+      { month: 'Jul', revenue: 240000 },
+      { month: 'Aug', revenue: 290000 },
+      { month: 'Sep', revenue: 160000 },
+      { month: 'Oct', revenue: 310000 },
+      { month: 'Nov', revenue: 350000 },
+      { month: 'Dec', revenue: 420000 }
     ]
-  });
-  
+  });  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -178,6 +191,39 @@ export default function Dashboard() {
           </div>
         </div>
 
+      </div>
+
+      {/* Revenue Graph */}
+      <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4">Monthly Revenue & Projections</h2>
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data.monthlyRevenueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} dy={10} />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 12, fill: '#64748b' }}
+                tickFormatter={(value) => `₹${value >= 1000 ? (value / 1000) + 'k' : value}`}
+                dx={-10}
+              />
+              <Tooltip 
+                cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '3 3' }}
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                formatter={(value) => [`₹${value.toLocaleString('en-IN')}`, 'Revenue']}
+                labelStyle={{ color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}
+              />
+              <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Event Pipeline Tracker (Horizontal Kanban Flow) */}
