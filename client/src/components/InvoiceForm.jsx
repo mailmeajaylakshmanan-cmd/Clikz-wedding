@@ -454,6 +454,8 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                           onChange={(selected) => {
                             updateService(idx, 'service', selected ? selected.value : '');
                           }}
+                          menuPortalTarget={document.body}
+                          menuPosition="fixed"
                           styles={{
                             control: (base) => ({
                               ...base,
@@ -463,7 +465,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                               minWidth: '150px',
                               '&:hover': { borderColor: '#cbd5e1' }
                             }),
-                            menu: (base) => ({ ...base, zIndex: 100 })
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 })
                           }}
                         />
                       </div>
