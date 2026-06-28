@@ -279,8 +279,8 @@ export default function InvoiceView() {
               {invoice.services.map((s, i) => (
                 <tr key={i} style={{ background: i % 2 === 0 ? C.white : C.faint }}>
                   <td style={{ ...doc.td, fontWeight: 600, color: C.ink }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Camera size={13} color={C.gold} style={{ flexShrink: 0 }} />
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                      <Camera size={13} color={C.gold} style={{ flexShrink: 0, marginTop: '2px' }} />
                       <span>{s.service || '—'}</span>
                     </div>
                   </td>
