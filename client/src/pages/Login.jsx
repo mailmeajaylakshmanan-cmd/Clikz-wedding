@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import {
-  Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Info
+  User, Lock, Eye, EyeOff, ArrowRight, Loader2, Info
 } from 'lucide-react';
 import clikzLogo from '../assets/clikz_logo.png';
 
@@ -113,11 +113,11 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} style={styles.form}>
-            {/* Email */}
+            {/* Username */}
             <div style={styles.fieldGroup}>
               <label style={styles.label} htmlFor="email">
-                <Mail size={13} style={styles.labelIcon} />
-                Email address
+                <User size={13} style={styles.labelIcon} />
+                Username
               </label>
               <div style={{
                 ...styles.inputWrap,
@@ -126,15 +126,15 @@ export default function Login() {
               }}>
                 <input
                   id="email"
-                  type="email"
+                  type="text"
                   value={form.email}
                   onChange={e => setForm({ ...form, email: e.target.value })}
                   onFocus={() => setFocusedField('email')}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="you@example.com"
+                  placeholder="Enter your username"
                   required
                   style={styles.input}
-                  autoComplete="email"
+                  autoComplete="username"
                 />
               </div>
             </div>

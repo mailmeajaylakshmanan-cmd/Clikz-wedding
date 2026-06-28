@@ -42,9 +42,9 @@ export default function UpdateCredentials() {
       </p>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '12px', marginBottom: '5px', fontWeight: 'bold' }}>Current Email (Required to verify)</label>
+          <label style={{ display: 'block', fontSize: '12px', marginBottom: '5px', fontWeight: 'bold' }}>Current Username</label>
           <input 
-            type="email" 
+            type="text" 
             value={currentEmail} 
             onChange={e => setCurrentEmail(e.target.value)}
             required
@@ -52,12 +52,12 @@ export default function UpdateCredentials() {
           />
         </div>
         <div>
-          <label style={{ display: 'block', fontSize: '12px', marginBottom: '5px', fontWeight: 'bold' }}>New Email (Optional)</label>
+          <label style={{ display: 'block', fontSize: '12px', marginBottom: '5px', fontWeight: 'bold' }}>New Username</label>
           <input 
-            type="email" 
+            type="text" 
             value={newEmail} 
             onChange={e => setNewEmail(e.target.value)}
-            placeholder="Leave blank to keep current"
+            placeholder="Leave blank to keep current username"
             style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
           />
         </div>
