@@ -48,8 +48,8 @@ const invoiceSchema = new mongoose.Schema({
   balance: { type: Number, default: 0 },
   status: {
     type: String,
-    enum: ['draft', 'sent', 'partial', 'paid'],
-    default: 'draft',
+    enum: ['pending', 'partial', 'paid'],
+    default: 'pending',
   },
   notes: { type: String, default: 'Grateful to be part of your celebration.' },
   requiredStaff: { type: Number, default: 0 },
@@ -65,8 +65,8 @@ const invoiceSchema = new mongoose.Schema({
   }],
 }, { timestamps: true });
 
-// Auto-generate invoice number and update staffing status before saving
-invoiceSchema.pre('save', async function (next) {
+// Auto-generate invoice number and update staffing status before validation
+invoiceSchema.pre('validate', async function (next) {
   if (!this.invoiceNo) {
     const count = await mongoose.model('Invoice').countDocuments();
     this.invoiceNo = `CWF-${String(count + 1).padStart(4, '0')}`;
@@ -98,10 +98,10 @@ invoiceSchema.pre('save', async function (next) {
   if (this.total > 0) {
     if (this.balance <= 0) {
       this.status = 'paid';
-    } else if (this.status === 'paid') {
+    } else if (this.balance < this.total) {
       this.status = 'partial';
-    } else if ((this.advancePaid > 0 || this.totalPaid > 0) && this.status === 'draft') {
-      this.status = 'partial';
+    } else {
+      this.status = 'pending';
     }
   }
 
