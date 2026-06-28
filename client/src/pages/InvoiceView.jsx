@@ -10,14 +10,14 @@ import toast from 'react-hot-toast';
 import clikzLogo from '../assets/clikz_logo.png';
 // ─── color palette ───────────────────────────────────────────────────────────
 const C = {
-  navy: '#0d1b2a',
-  navyMid: '#1a3a5c',
+  navy: '#1F1F1F',
+  navyMid: '#333333',
   gold: '#b8960c',
   goldLight: '#f0c040',
-  ink: '#0d1b2a',
-  muted: '#556b7d',
-  faint: '#e8eef3',
-  border: '#d0dce6',
+  ink: '#1F1F1F',
+  muted: '#6b7280',
+  faint: '#f9fafb',
+  border: '#eaeaea',
   white: '#ffffff',
   greenPaid: '#16a34a',
   bluePaid: '#1d4ed8',
@@ -204,7 +204,10 @@ export default function InvoiceView() {
         </div>
       </div>
       {/* ── Invoice document ── */}
-      <div id="invoice-print" ref={printRef} style={doc.wrap}>
+      <div id="invoice-print" ref={printRef} style={{ ...doc.wrap, position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.03, pointerEvents: 'none', zIndex: 0 }}>
+          <img src={clikzLogo} alt="" style={{ width: 450, height: 'auto', filter: 'grayscale(100%)' }} />
+        </div>
         {/* Header band */}
         <div style={doc.headerBand}>
           <div style={doc.logoZone}>
@@ -351,8 +354,8 @@ export default function InvoiceView() {
               </div>
             ) : (
               <div style={doc.paidFull}>
-                <CheckCircle2 size={16} color={C.greenPaid} />
-                <span style={{ color: C.greenPaid, fontWeight: 700, fontSize: 13 }}>Fully Paid</span>
+                <CheckCircle2 size={22} color={C.greenPaid} />
+                <span style={{ color: C.greenPaid, fontWeight: 800, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Paid</span>
               </div>
             )}
           </div>
@@ -424,8 +427,8 @@ const doc = {
   wrap: {
     maxWidth: 780, margin: '0 auto',
     background: '#ffffff', borderRadius: 12,
-    boxShadow: '0 4px 40px rgba(13,27,42,0.13)',
-    overflow: 'hidden', fontFamily: 'Inter, system-ui, sans-serif',
+    boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
+    overflow: 'hidden', fontFamily: "'Montserrat', system-ui, sans-serif",
     boxSizing: 'border-box',
   },
   // dark navy header
@@ -436,11 +439,11 @@ const doc = {
   },
   logoZone: { display: 'flex', alignItems: 'center', gap: 16 },
   logo: { height: 48, width: 'auto', objectFit: 'contain' },
-  brandName: { fontSize: 16, fontWeight: 800, color: '#ffffff', letterSpacing: '0.08em', margin: 0 },
+  brandName: { fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: '#ffffff', letterSpacing: '0.05em', margin: 0 },
   brandTagline: { fontSize: 10, color: '#8ba7be', fontStyle: 'italic', margin: '4px 0 0', letterSpacing: '0.05em' },
   invoiceMeta: { textAlign: 'right' },
-  invoiceWord: { fontSize: 10, fontWeight: 700, color: '#b8960c', letterSpacing: '0.28em', textTransform: 'uppercase', margin: 0 },
-  invoiceNum: { fontSize: 26, fontWeight: 800, color: '#ffffff', margin: '5px 0 0', letterSpacing: '0.03em' },
+  invoiceWord: { fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 700, color: '#b8960c', letterSpacing: '0.28em', textTransform: 'uppercase', margin: 0 },
+  invoiceNum: { fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#ffffff', margin: '5px 0 0', letterSpacing: '0.02em' },
   invoiceDate: { fontSize: 11, color: '#8ba7be', margin: '6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 },
   // gold gradient accent line
   goldRule: {
@@ -460,28 +463,29 @@ const doc = {
   },
   sectionLabel: {
     display: 'flex', alignItems: 'center', gap: 5,
-    fontSize: 9.5, fontWeight: 800, color: '#b8960c',
-    letterSpacing: '0.18em', textTransform: 'uppercase', margin: '0 0 10px',
+    fontFamily: "'Playfair Display', serif", fontSize: 11, fontWeight: 700, color: '#b8960c',
+    letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 10px',
   },
   sectionHeading: {
     display: 'inline-flex', alignItems: 'center', gap: 6,
-    fontSize: 9.5, fontWeight: 800, color: '#1a3a5c',
-    letterSpacing: '0.18em', textTransform: 'uppercase',
+    fontFamily: "'Playfair Display', serif", fontSize: 12, fontWeight: 700, color: '#1F1F1F',
+    letterSpacing: '0.12em', textTransform: 'uppercase',
     marginBottom: 10,
   },
-  partyName: { fontSize: 14, fontWeight: 700, color: '#0d1b2a', margin: '0 0 10px', lineHeight: 1.3, wordBreak: 'break-word' },
+  partyName: { fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: '#1F1F1F', margin: '0 0 10px', lineHeight: 1.3, wordBreak: 'break-word' },
   partyLines: { display: 'flex', flexDirection: 'column', gap: 6 },
   partyLine: { display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#556b7d', lineHeight: 1.4, wordBreak: 'break-word' },
   // tables
   tableWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed', boxSizing: 'border-box' },
   th: {
-    background: '#1a3a5c', color: '#ffffff',
-    padding: '11px 16px', fontSize: 11,
-    fontWeight: 700, letterSpacing: '0.04em',
+    background: 'rgba(184, 150, 12, 0.03)', color: '#333333',
+    padding: '14px 20px', fontSize: 11,
+    fontWeight: 600, letterSpacing: '0.06em',
+    borderBottom: '1px solid #eaeaea', textTransform: 'uppercase',
   },
-  td: { padding: '12px 16px', borderBottom: '1px solid #d0dce6', verticalAlign: 'middle' },
-  tdDesc: { padding: '12px 16px', borderBottom: '1px solid #d0dce6', verticalAlign: 'middle', fontSize: 13, lineHeight: 1.45, wordBreak: 'break-word' },
+  td: { padding: '16px 20px', borderBottom: '1px solid #eaeaea', verticalAlign: 'middle' },
+  tdDesc: { padding: '16px 20px', borderBottom: '1px solid #eaeaea', verticalAlign: 'middle', fontSize: 13, lineHeight: 1.45, color: '#6b7280' },
   // totals
   totalsWrap: { display: 'flex', justifyContent: 'flex-end', padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', pageBreakInside: 'avoid' },
   totalsBox: { width: '100%', maxWidth: 300 },
@@ -493,7 +497,12 @@ const doc = {
     marginTop: 10, padding: '12px 16px',
     background: '#fff1f2', borderRadius: 8, border: '1.5px solid #fecdd3',
   },
-  paidFull: { display: 'flex', alignItems: 'center', gap: 7, marginTop: 10, padding: '8px 0' },
+  paidFull: { 
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, 
+    marginTop: 15, padding: '12px', width: '85px', height: '85px',
+    border: '2px solid #16a34a', borderRadius: '50%',
+    transform: 'rotate(-8deg)', color: '#16a34a', opacity: 0.9, boxSizing: 'border-box'
+  },
   // notes + terms + footer
   notes: {
     margin: `0 ${PAGE_PAD}px ${SECTION_GAP}px`, padding: '14px 20px',
