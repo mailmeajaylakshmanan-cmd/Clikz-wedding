@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Phone, Mail, AtSign, MapPin, Calendar,
   Printer, MessageCircle, Pencil, CheckCircle2,
-  CreditCard, ChevronDown, Film, Building2,
+  CreditCard, ChevronDown, Film, Building2, Camera
 } from 'lucide-react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
@@ -275,7 +275,12 @@ export default function InvoiceView() {
             <tbody>
               {invoice.services.map((s, i) => (
                 <tr key={i} style={{ background: i % 2 === 0 ? C.white : C.faint }}>
-                  <td style={{ ...doc.td, fontWeight: 600, color: C.ink }}>{s.service || '—'}</td>
+                  <td style={{ ...doc.td, fontWeight: 600, color: C.ink }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Camera size={13} color={C.gold} style={{ flexShrink: 0 }} />
+                      <span>{s.service || '—'}</span>
+                    </div>
+                  </td>
                   <td style={{ ...doc.tdDesc, color: s.description ? '#334155' : '#94a3b8' }}>
                     {s.description?.trim() || '—'}
                   </td>
