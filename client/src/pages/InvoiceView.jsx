@@ -372,11 +372,11 @@ export default function InvoiceView() {
         {/* Terms & Conditions (Forced onto second page for printing) */}
         <div className="terms-page-break" style={doc.termsBox}>
           <p style={doc.termsTitle}>Terms &amp; Conditions</p>
-          <ol style={{ margin: 0, paddingLeft: 18, color: '#475569', fontSize: 11, lineHeight: 1.6 }}>
+          <ul style={{ margin: 0, paddingLeft: 18, color: '#475569', fontSize: 11, lineHeight: 1.6, listStyleType: 'disc' }}>
             {staticTerms.map((term, i) => (
               <li key={i} style={{ marginBottom: 5 }}>{term}</li>
             ))}
-          </ol>
+          </ul>
         </div>
         {/* Footer */}
         <div style={doc.footer}>
