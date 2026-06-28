@@ -447,12 +447,14 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                     <td className="py-3 pr-4">
                       <div className="relative">
                         <CreatableSelect
+                          isMulti
                           isClearable
                           placeholder="Select or type..."
                           options={serviceOptions.map(opt => ({ value: opt.name, label: opt.name }))}
-                          value={s.service ? { value: s.service, label: s.service } : null}
+                          value={s.service ? s.service.split(', ').map(v => ({ value: v, label: v })) : []}
                           onChange={(selected) => {
-                            updateService(idx, 'service', selected ? selected.value : '');
+                            const val = selected ? selected.map(item => item.value).join(', ') : '';
+                            updateService(idx, 'service', val);
                           }}
                           menuPortalTarget={document.body}
                           menuPosition="fixed"

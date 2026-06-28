@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const serviceLineSchema = new mongoose.Schema({
   service: { type: String, required: true },
   description: { type: String, default: '' },
-  price: { type: Number, required: true },
-  total: { type: Number, required: true },
+  price: { type: Number, default: 0 },
+  total: { type: Number, default: 0 },
 });
 
 function parseDateString(str) {
