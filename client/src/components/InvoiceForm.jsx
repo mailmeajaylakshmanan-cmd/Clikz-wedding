@@ -8,6 +8,7 @@ import {
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format, parseISO } from 'date-fns';
+import CreatableSelect from 'react-select/creatable';
 
 const emptyService = { service: '', description: '', price: '', total: 0 };
 
@@ -47,7 +48,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       totalPaid: 0,
       totalPaymentDate: new Date().toISOString().substring(0, 10),
       totalPaymentMethod: 'Cash',
-      status: 'draft',
+      status: 'pending',
       notes: 'Grateful to be part of your celebration.',
       requiredStaff: 0,
       // checkbox-controlled visibility for the two payment blocks
@@ -133,11 +134,13 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
         if (form.status !== 'paid') {
           setForm(function (f) { return { ...f, status: 'paid' }; });
         }
+      } else if (balance < total) {
+        if (form.status !== 'partial') {
+          setForm(function (f) { return { ...f, status: 'partial' }; });
+        }
       } else {
-        if (form.status === 'paid') {
-          setForm(function (f) { return { ...f, status: 'partial' }; });
-        } else if ((Number(form.advancePaid) > 0 || Number(form.totalPaid) > 0) && form.status === 'draft') {
-          setForm(function (f) { return { ...f, status: 'partial' }; });
+        if (form.status !== 'pending') {
+          setForm(function (f) { return { ...f, status: 'pending' }; });
         }
       }
     }
@@ -257,31 +260,36 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
           {/* Customer — input with datalist (select or type new) */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Customer *</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+            <div className="relative z-50">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">
                 <User size={14} />
               </span>
-              <input
-                list="customer-list"
-                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
-                value={form.customer.name}
-                onChange={function (e) {
-                  const val = e.target.value;
-                  const matched = customers.find(c => c.name === val || c.name + ' — ' + c.phone === val);
-                  if (matched) {
-                    setForm(f => ({ ...f, customer: { _id: matched._id, name: matched.name, phone: matched.phone } }));
+              <CreatableSelect
+                isClearable
+                placeholder="Type or select a customer"
+                options={customers.map(c => ({ value: c._id, label: `${c.name} — ${c.phone}`, customer: c }))}
+                value={form.customer?.name ? { value: form.customer._id || 'new', label: form.customer.name } : null}
+                onChange={(selected, actionMeta) => {
+                  if (!selected) {
+                    setForm(f => ({ ...f, customer: { name: '', phone: '' } }));
+                  } else if (actionMeta.action === 'create-option') {
+                    setForm(f => ({ ...f, customer: { _id: undefined, name: selected.value, phone: '' } }));
                   } else {
-                    setForm(f => ({ ...f, customer: { ...f.customer, _id: undefined, name: val } }));
+                    const matched = selected.customer;
+                    setForm(f => ({ ...f, customer: { _id: matched._id, name: matched.name, phone: matched.phone } }));
                   }
                 }}
-                placeholder="Type or select a customer"
-                required
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    paddingLeft: '2rem',
+                    borderColor: '#e2e8f0',
+                    borderRadius: '0.5rem',
+                    boxShadow: 'none',
+                    '&:hover': { borderColor: '#cbd5e1' }
+                  })
+                }}
               />
-              <datalist id="customer-list">
-                {customers.map(c => (
-                  <option key={c._id} value={c.name} />
-                ))}
-              </datalist>
             </div>
             {form.customer?.name && !matchedCustomer && (
               <p className="text-[11px] text-amber-600 mt-1.5 flex items-center gap-1">
@@ -438,18 +446,26 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                   <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
                     <td className="py-3 pr-4">
                       <div className="relative">
-                        <input
-                          list={`service-list-${idx}`}
-                          className="input focus:ring-orange-500/20 focus:border-orange-500 w-full"
-                          value={s.service}
-                          onChange={function (e) { updateService(idx, 'service', e.target.value); }}
+                        <CreatableSelect
+                          isClearable
                           placeholder="Select or type..."
+                          options={serviceOptions.map(opt => ({ value: opt.name, label: opt.name }))}
+                          value={s.service ? { value: s.service, label: s.service } : null}
+                          onChange={(selected) => {
+                            updateService(idx, 'service', selected ? selected.value : '');
+                          }}
+                          styles={{
+                            control: (base) => ({
+                              ...base,
+                              borderColor: '#e2e8f0',
+                              borderRadius: '0.5rem',
+                              boxShadow: 'none',
+                              minWidth: '150px',
+                              '&:hover': { borderColor: '#cbd5e1' }
+                            }),
+                            menu: (base) => ({ ...base, zIndex: 100 })
+                          }}
                         />
-                        <datalist id={`service-list-${idx}`}>
-                          {serviceOptions.map(function (opt) {
-                            return <option key={opt.name} value={opt.name} />;
-                          })}
-                        </datalist>
                       </div>
                     </td>
                     <td className="py-3 pr-4">
@@ -700,8 +716,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               <label className="block text-xs font-semibold text-slate-500 mb-2">Invoice Status</label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { key: 'draft', label: 'Draft' },
-                  { key: 'sent', label: 'Sent' },
+                  { key: 'pending', label: 'Pending' },
                   { key: 'partial', label: 'Partial' },
                   { key: 'paid', label: 'Paid' }
                 ].map(item => (
