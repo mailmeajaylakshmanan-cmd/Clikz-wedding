@@ -11,6 +11,7 @@ import MasterEvent from './pages/MasterEvent.jsx';
 import MasterService from './pages/MasterService.jsx';
 import MasterCustomer from './pages/MasterCustomer.jsx';
 import MasterCrew from './pages/MasterCrew.jsx';
+import UpdateCredentials from './pages/UpdateCredentials.jsx';
 
 function PrivateRoute({ children }) {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="master-service" element={<MasterService />} />
         <Route path="master-customer" element={<MasterCustomer />} />
         <Route path="master-crew" element={<MasterCrew />} />
+        <Route path="update-credentials" element={<UpdateCredentials />} />
       </Route>
     </Routes>
   );

@@ -59,6 +59,29 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /api/auth/update (temporary route to change credentials)
+router.post('/update', async (req, res) => {
+  try {
+    const { currentEmail, newEmail, newPassword } = req.body;
+    const user = await User.findOne({ email: currentEmail.toLowerCase().trim() });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Current user not found' });
+    }
+
+    user.email = newEmail.toLowerCase().trim();
+    if (newPassword) {
+      user.password = await bcrypt.hash(newPassword, 10);
+    }
+    await user.save();
+    
+    res.json({ message: 'Credentials updated successfully' });
+  } catch (error) {
+    console.error('Update credentials error:', error);
+    res.status(500).json({ message: 'Server error during update' });
+  }
+});
+
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
   res.cookie('token', '', {
