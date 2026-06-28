@@ -7,9 +7,9 @@ const { secureFind, secureFindOne } = require('../utils/queryHelper');
 router.get('/', auth, async (req, res) => {
   try {
     const query = {};
-    if (req.query.category) query.eventCategory = req.query.category;
+    if (req.query.category) query.categories = req.query.category;
     const services = await secureFind(Service, query, req)
-      .populate('eventCategory', 'name showTerms')
+      .populate('categories', 'name showTerms')
       .sort({ name: 1 })
       .lean();
     res.json(services);
@@ -22,7 +22,7 @@ router.post('/', auth, async (req, res) => {
   try {
     const service = new Service({ ...req.body, studioId: req.studioId });
     await service.save();
-    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('eventCategory', 'name showTerms').lean();
+    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('categories', 'name showTerms').lean();
     res.status(201).json(populated);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -37,7 +37,7 @@ router.put('/:id', auth, async (req, res) => {
       { new: true, runValidators: true }
     );
     if (!service) return res.status(404).json({ message: 'Service not found' });
-    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('eventCategory', 'name showTerms').lean();
+    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('categories', 'name showTerms').lean();
     res.json(populated);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -53,7 +53,7 @@ router.patch('/:id/status', auth, async (req, res) => {
       { new: true }
     );
     if (!service) return res.status(404).json({ message: 'Service not found' });
-    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('eventCategory', 'name showTerms').lean();
+    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('categories', 'name showTerms').lean();
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: err.message });

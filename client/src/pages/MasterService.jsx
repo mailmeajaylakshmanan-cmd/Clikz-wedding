@@ -3,6 +3,7 @@ import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import { Plus, Edit3, Trash2, X } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Select from 'react-select';
 
 export default function MasterService() {
   const queryClient = useQueryClient();
@@ -27,7 +28,7 @@ export default function MasterService() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
-  const [eventCategory, setEventCategory] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [descriptionsStr, setDescriptionsStr] = useState('');
   const [editId, setEditId] = useState(null);
 
@@ -44,7 +45,7 @@ export default function MasterService() {
 
     const payload = {
       name,
-      eventCategory: eventCategory || null,
+      categories: selectedCategories.map(c => c.value),
       descriptions
     };
     
@@ -66,7 +67,7 @@ export default function MasterService() {
   function handleAdd() {
     setEditId(null);
     setName('');
-    setEventCategory('');
+    setSelectedCategories([]);
     setDescriptionsStr('');
     setIsModalOpen(true);
   }
@@ -74,7 +75,7 @@ export default function MasterService() {
   function handleEdit(srv) {
     setEditId(srv._id);
     setName(srv.name);
-    setEventCategory(srv.eventCategory?._id || '');
+    setSelectedCategories((srv.categories || []).map(cat => ({ value: cat._id, label: cat.name })));
     setDescriptionsStr((srv.descriptions || []).join('\n'));
     setIsModalOpen(true);
   }
@@ -82,7 +83,7 @@ export default function MasterService() {
   function handleCancelEdit() {
     setEditId(null);
     setName('');
-    setEventCategory('');
+    setSelectedCategories([]);
     setDescriptionsStr('');
     setIsModalOpen(false);
   }
@@ -146,10 +147,14 @@ export default function MasterService() {
                 <tr key={srv._id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4.5 font-semibold text-slate-800 text-sm">{srv.name}</td>
                   <td className="px-6 py-4.5 text-slate-600">
-                    {srv.eventCategory?.name ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight bg-blue-50 text-blue-600 border border-blue-100">
-                        {srv.eventCategory.name}
-                      </span>
+                    {srv.categories && srv.categories.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                        {srv.categories.map((cat, i) => (
+                          <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight bg-blue-50 text-blue-600 border border-blue-100">
+                            {cat.name}
+                          </span>
+                        ))}
+                      </div>
                     ) : '—'}
                   </td>
                   <td className="px-6 py-4.5 text-slate-600">
@@ -218,17 +223,15 @@ export default function MasterService() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Event Category Link</label>
-                  <select
-                    className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent text-slate-700 font-medium"
-                    value={eventCategory}
-                    onChange={e => setEventCategory(e.target.value)}
-                  >
-                    <option value="">-- Unlinked / Generic --</option>
-                    {categories.map(cat => (
-                      <option key={cat._id} value={cat._id}>{cat.name}</option>
-                    ))}
-                  </select>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Event Category Link(s)</label>
+                  <Select
+                    isMulti
+                    options={categories.map(cat => ({ value: cat._id, label: cat.name }))}
+                    value={selectedCategories}
+                    onChange={setSelectedCategories}
+                    placeholder="Select one or more categories..."
+                    className="text-sm text-slate-700"
+                  />
                 </div>
 
                 <div>

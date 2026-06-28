@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 
 // Mock data removed - fetching from backend only
 export default function Dashboard() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: () => api.get('/dashboard').then(res => {
       const mapStage = { pending: 'Enquiry', partial: 'In Progress', paid: 'Completed' };
@@ -57,6 +57,15 @@ export default function Dashboard() {
     );
   }
 
+  if (isError || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-rose-500 gap-3">
+        <Activity className="text-rose-500" size={32} />
+        <span className="font-semibold text-lg">Error loading dashboard data</span>
+        <span className="text-sm text-slate-500">{error?.message || 'Check your connection or contact support'}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

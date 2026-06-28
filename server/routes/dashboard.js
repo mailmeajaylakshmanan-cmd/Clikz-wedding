@@ -65,7 +65,7 @@ router.get('/', auth, async (req, res) => {
     // 3. Recent Transactions (Generate a mock ledger feed from recent invoices that have payments)
     const txInvoices = await secureFind(Invoice, {
       $or: [{ advancePaid: { $gt: 0 } }, { totalPaid: { $gt: 0 } }]
-    }).sort({ updatedAt: -1 }).limit(10).lean();
+    }, req).sort({ updatedAt: -1 }).limit(10).lean();
 
     const recentPayments = [];
     txInvoices.forEach(inv => {
