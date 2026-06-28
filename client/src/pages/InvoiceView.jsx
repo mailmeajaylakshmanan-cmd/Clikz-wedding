@@ -262,7 +262,10 @@ export default function InvoiceView() {
         </div>
         {/* Services table */}
         <div style={doc.tableWrap}>
-          <div style={doc.sectionHeading}><span>SERVICES</span></div>
+          <div style={doc.sectionHeading}>
+            <Film size={12} color={C.gold} />
+            <span>SERVICES</span>
+          </div>
           <table style={doc.table}>
             <thead>
               <tr>
