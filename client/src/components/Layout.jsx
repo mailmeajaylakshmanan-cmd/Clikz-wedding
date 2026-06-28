@@ -8,14 +8,29 @@ import { useState, useEffect } from 'react';
 import clikzLogo from '../assets/clikz_logo.png';
 import api from '../api/axios.js';
 
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/invoices', label: 'Master Invoice', icon: FileText },
-  // { to: '/dispatcher', label: 'Dispatcher', icon: Film },
-  { to: '/master-event', label: 'Master Event', icon: Calendar },
-  { to: '/master-service', label: 'Master Service', icon: Briefcase },
-  { to: '/master-customer', label: 'Master Customer', icon: User },
-  { to: '/master-crew', label: 'Crew Master', icon: User },
+const navGroups = [
+  {
+    title: 'Main',
+    items: [
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+    ]
+  },
+  {
+    title: 'Invoice',
+    items: [
+      { to: '/invoices/new', label: 'New', icon: Plus, end: true },
+      { to: '/invoices', label: 'Manage', icon: FileText },
+    ]
+  },
+  {
+    title: 'Master',
+    items: [
+      { to: '/master-customer', label: 'Customer', icon: User },
+      { to: '/master-event', label: 'Event', icon: Calendar },
+      { to: '/master-service', label: 'Service', icon: Briefcase },
+      { to: '/master-crew', label: 'Crew', icon: User },
+    ]
+  }
 ];
 
 export default function Layout() {
@@ -64,7 +79,8 @@ export default function Layout() {
   };
 
   const getPageTitle = () => {
-    const item = navItems.find(i =>
+    const allItems = navGroups.flatMap(g => g.items);
+    const item = allItems.find(i =>
       i.end ? location.pathname === i.to : location.pathname.startsWith(i.to)
     );
     return item?.label || 'Dashboard';
@@ -155,15 +171,19 @@ export default function Layout() {
 
         {/* Navigation */}
         <nav style={styles.nav}>
-          {(!isSidebarCollapsed || isMobile) && (
-            <p style={styles.secLabel}>Main Menu</p>
-          )}
-          {navItems.map((item) => (
-            <NavItem
-              key={item.to}
-              item={item}
-              collapsed={isSidebarCollapsed && !isMobile}
-            />
+          {navGroups.map((group, idx) => (
+            <div key={idx} style={{ marginBottom: 16 }}>
+              {(!isSidebarCollapsed || isMobile) && (
+                <p style={styles.secLabel}>{group.title}</p>
+              )}
+              {group.items.map((item) => (
+                <NavItem
+                  key={item.to}
+                  item={item}
+                  collapsed={isSidebarCollapsed && !isMobile}
+                />
+              ))}
+            </div>
           ))}
         </nav>
 
