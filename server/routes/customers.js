@@ -7,6 +7,7 @@ const { secureFind, secureFindOne } = require('../utils/queryHelper');
 // GET all customers (with search for autocomplete)
 router.get('/', auth, async (req, res) => {
   try {
+    const { search } = req.query;
     if (search) {
       // High-performance Atlas Search (Requires Search Index to be built manually in MongoDB Atlas)
       // Fallback to normal query if we just want basic regex before index builds:
