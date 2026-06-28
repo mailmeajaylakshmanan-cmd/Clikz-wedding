@@ -78,7 +78,7 @@ export default function MasterEvent() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <header className="flex justify-between items-end mb-8">
+      <header className="md:flex justify-between items-end mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Master Event</h1>
           <p className="text-slate-500 mt-1">Manage event categories and print layout terms</p>
@@ -93,7 +93,7 @@ export default function MasterEvent() {
       </header>
 
       {/* Table Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-slate-50/80 border-b border-slate-200">

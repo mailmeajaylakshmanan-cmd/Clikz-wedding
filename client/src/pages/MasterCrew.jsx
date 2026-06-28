@@ -84,7 +84,7 @@ export default function MasterCrew() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <header className="flex justify-between items-end mb-8">
+      <header className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Crew Master</h1>
           <p className="text-slate-500 mt-1">Review studio crew rosters and operational statuses</p>
@@ -99,7 +99,7 @@ export default function MasterCrew() {
       </header>
 
       {/* Table Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-slate-50/80 border-b border-slate-200">

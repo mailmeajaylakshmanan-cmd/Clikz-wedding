@@ -464,7 +464,7 @@ const doc = {
   partyLines: { display: 'flex', flexDirection: 'column', gap: 6 },
   partyLine: { display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#556b7d', lineHeight: 1.4, wordBreak: 'break-word' },
   // tables
-  tableWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box' },
+  tableWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed', boxSizing: 'border-box' },
   th: {
     background: '#1a3a5c', color: '#ffffff',

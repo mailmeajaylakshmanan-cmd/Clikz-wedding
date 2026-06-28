@@ -101,14 +101,14 @@ export default function MasterService() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <header className="flex justify-between items-end mb-8">
+      <header className="flex flex-col md:flex-row justify-between md:items-end mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Master Service</h1>
           <p className="text-slate-500 mt-1">Manage studio service catalogs and descriptions</p>
         </div>
         <button 
           onClick={handleAdd} 
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-200"
+          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-200 mt-4 md:mt-0"
         >
           <Plus size={20} />
           <span>Add Service</span>
@@ -117,73 +117,75 @@ export default function MasterService() {
 
       {/* Table Container */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-slate-50/80 border-b border-slate-200">
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Name</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Event Category</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Descriptions</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loading && (
-              <tr>
-                <td colSpan="4" className="text-center py-12 text-slate-400 text-sm">
-                  Loading services...
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50/80 border-b border-slate-200">
+                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Name</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Event Category</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Descriptions</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
-            )}
-            {!loading && services.length === 0 && (
-              <tr>
-                <td colSpan="4" className="text-center py-12 text-slate-400 text-sm">
-                  No services found
-                </td>
-              </tr>
-            )}
-            {services.map(srv => (
-              <tr key={srv._id} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-6 py-4.5 font-semibold text-slate-800 text-sm">{srv.name}</td>
-                <td className="px-6 py-4.5 text-slate-600">
-                  {srv.eventCategory?.name ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight bg-blue-50 text-blue-600 border border-blue-100">
-                      {srv.eventCategory.name}
-                    </span>
-                  ) : '—'}
-                </td>
-                <td className="px-6 py-4.5 text-slate-600">
-                  {srv.descriptions && srv.descriptions.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5 max-w-md">
-                      {srv.descriptions.map((d, i) => (
-                        <span key={i} className="inline-block bg-slate-50 text-slate-600 border border-slate-100 px-2 py-0.5 rounded text-[11px] font-medium">
-                          {d}
-                        </span>
-                      ))}
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading && (
+                <tr>
+                  <td colSpan="4" className="text-center py-12 text-slate-400 text-sm">
+                    Loading services...
+                  </td>
+                </tr>
+              )}
+              {!loading && services.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="text-center py-12 text-slate-400 text-sm">
+                    No services found
+                  </td>
+                </tr>
+              )}
+              {services.map(srv => (
+                <tr key={srv._id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-6 py-4.5 font-semibold text-slate-800 text-sm">{srv.name}</td>
+                  <td className="px-6 py-4.5 text-slate-600">
+                    {srv.eventCategory?.name ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight bg-blue-50 text-blue-600 border border-blue-100">
+                        {srv.eventCategory.name}
+                      </span>
+                    ) : '—'}
+                  </td>
+                  <td className="px-6 py-4.5 text-slate-600">
+                    {srv.descriptions && srv.descriptions.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 max-w-md">
+                        {srv.descriptions.map((d, i) => (
+                          <span key={i} className="inline-block bg-slate-50 text-slate-600 border border-slate-100 px-2 py-0.5 rounded text-[11px] font-medium">
+                            {d}
+                          </span>
+                        ))}
+                      </div>
+                    ) : '—'}
+                  </td>
+                  <td className="px-6 py-4.5 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => handleEdit(srv)}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        title="Edit"
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(srv._id)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                  ) : '—'}
-                </td>
-                <td className="px-6 py-4.5 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => handleEdit(srv)}
-                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                      title="Edit"
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(srv._id)}
-                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal */}

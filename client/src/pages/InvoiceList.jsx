@@ -93,14 +93,14 @@ export default function InvoiceList() {
   return (
     <div className="space-y-6">
       {/* 1. Header Section */}
-      <header className="flex justify-between items-end mb-8">
+      <header className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Master Invoice</h1>
           <p className="text-slate-500 mt-1">Manage your bookings and track staffing pipeline</p>
         </div>
         <Link 
           to="/invoices/new" 
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-200"
+          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-200 w-full sm:w-auto"
         >
           <Plus size={20} />
           <span>New Invoice</span>
@@ -123,7 +123,7 @@ export default function InvoiceList() {
       </div>
 
       {/* 3. Filter Bar */}
-      <div className="bg-white p-4 rounded-t-2xl border border-slate-200 border-b-0 flex gap-4">
+      <div className="bg-white p-4 rounded-t-2xl border border-slate-200 border-b-0 flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
