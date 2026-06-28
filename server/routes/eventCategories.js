@@ -40,10 +40,9 @@ router.put('/:id', auth, async (req, res) => {
 
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const inUse = await Service.countDocuments({ eventCategory: req.params.id, studioId: req.studioId });
-    if (inUse > 0) {
-      return res.status(400).json({ message: 'Cannot delete — services are linked to this category' });
-    }
+    // Cascade delete: delete all services associated with this category
+    await Service.deleteMany({ eventCategory: req.params.id, studioId: req.studioId });
+    
     const deleted = await EventCategory.findOneAndDelete({ _id: req.params.id, studioId: req.studioId });
     if (!deleted) return res.status(404).json({ message: 'Category not found' });
     res.json({ message: 'Category deleted' });
