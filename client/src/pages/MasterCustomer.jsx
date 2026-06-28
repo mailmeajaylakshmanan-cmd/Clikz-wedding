@@ -68,14 +68,14 @@ export default function MasterCustomer() {
     setIsModalOpen(false);
   }
 
-  async function handleDelete(id) {
-    if (!confirm('Delete this customer?')) return;
+  async function handleStatusChange(id, newStatusStr) {
+    const isActive = newStatusStr === 'Active';
     try {
-      await api.delete('/customers/' + id);
-      toast.success('Deleted');
+      await api.patch(`/customers/${id}/status`, { isActive });
+      toast.success(`Customer marked ${newStatusStr}`);
       queryClient.invalidateQueries({ queryKey: ['customers'] });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error deleting customer');
+      toast.error(err.response?.data?.message || 'Error updating status');
     }
   }
 
@@ -137,13 +137,18 @@ export default function MasterCustomer() {
                       >
                         <Edit3 size={16} />
                       </button>
-                      <button
-                        onClick={() => handleDelete(customer._id)}
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                        title="Delete"
+                      <select
+                        value={customer.isActive !== false ? 'Active' : 'Inactive'}
+                        onChange={(e) => handleStatusChange(customer._id, e.target.value)}
+                        className={`text-xs font-semibold rounded-lg px-2 py-1 outline-none border cursor-pointer ${
+                          customer.isActive !== false 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                            : 'bg-rose-50 text-rose-700 border-rose-200'
+                        }`}
                       >
-                        <Trash2 size={16} />
-                      </button>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                      </select>
                     </div>
                   </td>
                 </tr>

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const customerSchema = new mongoose.Schema({
   studioId: { type: String, required: true, default: 'default_studio' },
   isDeleted: { type: Boolean, default: false },
+  isActive: { type: Boolean, default: true },
   name: { type: String, required: true },
   phone: { type: String, required: true },
   email: { type: String, default: '' },

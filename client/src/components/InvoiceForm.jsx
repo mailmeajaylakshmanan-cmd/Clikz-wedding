@@ -267,7 +267,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               <CreatableSelect
                 isClearable
                 placeholder="Type or select a customer"
-                options={customers.map(c => ({ value: c._id, label: `${c.name} — ${c.phone}`, customer: c }))}
+                options={customers.filter(c => c.isActive !== false || c._id === form.customer?._id).map(c => ({ value: c._id, label: `${c.name} — ${c.phone}`, customer: c }))}
                 value={form.customer?.name ? { value: form.customer._id || 'new', label: form.customer.name } : null}
                 onChange={(selected, actionMeta) => {
                   if (!selected) {
@@ -328,7 +328,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                 required
               >
                 <option value="">Select category</option>
-                {eventCategories.map(function (c) {
+                {eventCategories.filter(c => c.isActive !== false || c._id === form.eventCategory).map(function (c) {
                   return <option key={c._id} value={c._id}>{c.name}</option>;
                 })}
               </select>
@@ -450,7 +450,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                           isMulti
                           isClearable
                           placeholder="Select or type..."
-                          options={serviceOptions.map(opt => ({ value: opt.name, label: opt.name }))}
+                          options={serviceOptions.filter(opt => opt.isActive !== false).map(opt => ({ value: opt.name, label: opt.name }))}
                           value={s.service ? s.service.split(', ').map(v => ({ value: v, label: v })) : []}
                           onChange={(selected) => {
                             const val = selected ? selected.map(item => item.value).join(', ') : '';

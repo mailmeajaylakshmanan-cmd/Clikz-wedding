@@ -44,11 +44,17 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.patch('/:id/status', auth, async (req, res) => {
   try {
-    const deleted = await Service.findOneAndDelete({ _id: req.params.id, studioId: req.studioId });
-    if (!deleted) return res.status(404).json({ message: 'Service not found' });
-    res.json({ message: 'Service deleted' });
+    const { isActive } = req.body;
+    const service = await Service.findOneAndUpdate(
+      { _id: req.params.id, studioId: req.studioId },
+      { isActive },
+      { new: true }
+    );
+    if (!service) return res.status(404).json({ message: 'Service not found' });
+    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('eventCategory', 'name showTerms').lean();
+    res.json(populated);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

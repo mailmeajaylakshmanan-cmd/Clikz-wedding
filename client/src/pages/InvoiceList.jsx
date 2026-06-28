@@ -57,16 +57,7 @@ export default function InvoiceList() {
   const stats = data?.stats || { totalRevenue: 0, staffingPending: 0, balanceDue: 0, fullyStaffed: 0 };
   const selectedPaymentInvoice = selectedPaymentInvoiceId ? invoices.find(i => i._id === selectedPaymentInvoiceId) : null;
 
-  async function deleteInvoice(id) {
-    if (!confirm('Delete this invoice?')) return;
-    try {
-      await api.delete('/invoices/' + id);
-      toast.success('Invoice deleted');
-      refetch();
-    } catch {
-      toast.error('Failed to delete invoice');
-    }
-  }
+
 
   // Filter in memory for instant feedback
   const filtered = invoices.filter((inv) => {
@@ -233,7 +224,6 @@ export default function InvoiceList() {
                     <div className="flex justify-end gap-2">
                       <Link to={`/invoices/${inv._id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="View Details"><Eye size={16}/></Link>
                       <Link to={`/invoices/${inv._id}/edit`} className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg" title="Edit"><Edit3 size={16}/></Link>
-                      <button onClick={() => deleteInvoice(inv._id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Delete"><Trash2 size={16}/></button>
                     </div>
                   </td>
                 </tr>

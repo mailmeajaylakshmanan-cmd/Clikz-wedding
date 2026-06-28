@@ -70,14 +70,14 @@ export default function MasterCrew() {
     setIsModalOpen(false);
   }
 
-  async function handleDelete(id) {
-    if (!confirm('Delete this crew member?')) return;
+  async function handleStatusChange(id, newStatusStr) {
+    const isActive = newStatusStr === 'Active';
     try {
-      await api.delete('/employees/' + id);
-      toast.success('Crew member deleted');
+      await api.patch(`/employees/${id}/status`, { isActive });
+      toast.success(`Crew marked ${newStatusStr}`);
       queryClient.invalidateQueries({ queryKey: ['employees'] });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Error deleting crew member');
+      toast.error(err.response?.data?.message || 'Error updating status');
     }
   }
 
@@ -158,13 +158,18 @@ export default function MasterCrew() {
                     >
                       <Edit3 size={16} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(member._id)}
-                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                      title="Delete"
+                    <select
+                      value={member.isActive !== false ? 'Active' : 'Inactive'}
+                      onChange={(e) => handleStatusChange(member._id, e.target.value)}
+                      className={`text-xs font-semibold rounded-lg px-2 py-1 outline-none border cursor-pointer ${
+                        member.isActive !== false 
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          : 'bg-rose-50 text-rose-700 border-rose-200'
+                      }`}
                     >
-                      <Trash2 size={16} />
-                    </button>
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
                   </div>
                 </td>
               </tr>

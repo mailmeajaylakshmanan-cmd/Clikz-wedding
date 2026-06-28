@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const employeeSchema = new mongoose.Schema({
   studioId: { type: String, required: true, default: 'default_studio' },
   isDeleted: { type: Boolean, default: false },
+  isActive: { type: Boolean, default: true },
   name: { type: String, required: true },
   role: { type: String, required: true },
   contact: { type: String, default: '' },

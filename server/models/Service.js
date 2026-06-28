@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const serviceSchema = new mongoose.Schema({
   studioId: { type: String, required: true, default: 'default_studio' },
   isDeleted: { type: Boolean, default: false },
+  isActive: { type: Boolean, default: true },
   name: { type: String, required: true },
   descriptions: [{ type: String }],
   eventCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'EventCategory' },

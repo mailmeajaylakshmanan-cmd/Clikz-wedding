@@ -47,14 +47,17 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE employee
-router.delete('/:id', auth, async (req, res) => {
+// PATCH employee status
+router.patch('/:id/status', auth, async (req, res) => {
   try {
-    const employee = await Employee.findOneAndDelete({ _id: req.params.id, studioId: req.studioId });
-    if (!employee) {
-      return res.status(404).json({ message: 'Employee not found' });
-    }
-    res.json({ message: 'Employee deleted' });
+    const { isActive } = req.body;
+    const employee = await Employee.findOneAndUpdate(
+      { _id: req.params.id, studioId: req.studioId },
+      { isActive },
+      { new: true }
+    );
+    if (!employee) return res.status(404).json({ message: 'Employee not found' });
+    res.json(employee);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

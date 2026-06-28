@@ -38,14 +38,16 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.patch('/:id/status', auth, async (req, res) => {
   try {
-    // Cascade delete: delete all services associated with this category
-    await Service.deleteMany({ eventCategory: req.params.id, studioId: req.studioId });
-    
-    const deleted = await EventCategory.findOneAndDelete({ _id: req.params.id, studioId: req.studioId });
-    if (!deleted) return res.status(404).json({ message: 'Category not found' });
-    res.json({ message: 'Category deleted' });
+    const { isActive } = req.body;
+    const category = await EventCategory.findOneAndUpdate(
+      { _id: req.params.id, studioId: req.studioId },
+      { isActive },
+      { new: true }
+    );
+    if (!category) return res.status(404).json({ message: 'Category not found' });
+    res.json(category);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

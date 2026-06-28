@@ -62,12 +62,17 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// DELETE customer
-router.delete('/:id', auth, async (req, res) => {
+// PATCH customer status (Active/Inactive)
+router.patch('/:id/status', auth, async (req, res) => {
   try {
-    const customer = await Customer.findOneAndDelete({ _id: req.params.id, studioId: req.studioId });
+    const { isActive } = req.body;
+    const customer = await Customer.findOneAndUpdate(
+      { _id: req.params.id, studioId: req.studioId },
+      { isActive },
+      { new: true }
+    );
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
-    res.json({ message: 'Customer deleted' });
+    res.json(customer);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
