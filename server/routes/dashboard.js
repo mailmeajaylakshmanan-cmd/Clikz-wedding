@@ -10,8 +10,9 @@ router.get('/', auth, async (req, res) => {
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
+    const yearStart = new Date(todayStart.getFullYear(), 0, 1);
 
-    const [totalInvoices, statusCounts, revenueData, todaysAssignments] = await Promise.all([
+    const [totalInvoices, statusCounts, revenueData, todaysAssignments, monthlyData] = await Promise.all([
       Invoice.countDocuments({ studioId: req.studioId, isDeleted: false }),
       Invoice.aggregate([
         { $match: { studioId: req.studioId, isDeleted: false } },
@@ -34,7 +35,11 @@ router.get('/', auth, async (req, res) => {
         studioId: req.studioId,
         isDeleted: false,
         eventDates: { $gte: todayStart, $lte: todayEnd }
-      })
+      }),
+      Invoice.aggregate([
+        { $match: { studioId: req.studioId, isDeleted: false, createdAt: { $gte: yearStart } } },
+        { $group: { _id: { $month: "$createdAt" }, revenue: { $sum: "$total" } } }
+      ])
     ]);
 
     const statusMap = {};
@@ -89,6 +94,12 @@ router.get('/', auth, async (req, res) => {
     // Sort by date descending
     recentPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyRevenueData = months.map((month, idx) => {
+      const found = monthlyData.find(m => m._id === idx + 1);
+      return { month, revenue: found ? found.revenue : 0 };
+    });
+
     res.json({
       totalInvoices,
       statusMap,
@@ -99,6 +110,7 @@ router.get('/', auth, async (req, res) => {
       pipelineInvoices,
       upcomingSchedule,
       recentPayments: recentPayments.slice(0, 10),
+      monthlyRevenueData,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

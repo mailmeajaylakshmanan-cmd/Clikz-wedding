@@ -48,8 +48,8 @@ const invoiceSchema = new mongoose.Schema({
   balance: { type: Number, default: 0 },
   status: {
     type: String,
-    enum: ['pending', 'partial', 'paid'],
-    default: 'pending',
+    enum: ['draft', 'sent', 'partial', 'paid'],
+    default: 'draft',
   },
   notes: { type: String, default: 'Grateful to be part of your celebration.' },
   requiredStaff: { type: Number, default: 0 },
@@ -65,8 +65,8 @@ const invoiceSchema = new mongoose.Schema({
   }],
 }, { timestamps: true });
 
-// Auto-generate invoice number and update staffing status before validation
-invoiceSchema.pre('validate', async function (next) {
+// Auto-generate invoice number and update staffing status before saving
+invoiceSchema.pre('save', async function (next) {
   if (!this.invoiceNo) {
     const count = await mongoose.model('Invoice').countDocuments();
     this.invoiceNo = `CWF-${String(count + 1).padStart(4, '0')}`;
@@ -80,7 +80,7 @@ invoiceSchema.pre('validate', async function (next) {
       .filter(d => d !== null);
     this.eventDates = dates;
   }
-  
+
   if (this.requiredStaff === 0) {
     this.staffingStatus = 'Fully Staffed';
   } else if (!this.staffAllocated || this.staffAllocated.length === 0) {
@@ -90,7 +90,7 @@ invoiceSchema.pre('validate', async function (next) {
   } else {
     this.staffingStatus = 'Fully Staffed';
   }
-  
+
   // Calculate and update balance
   this.balance = this.total - (this.advancePaid || 0) - (this.totalPaid || 0);
 
@@ -98,10 +98,10 @@ invoiceSchema.pre('validate', async function (next) {
   if (this.total > 0) {
     if (this.balance <= 0) {
       this.status = 'paid';
-    } else if (this.balance < this.total) {
+    } else if (this.status === 'paid') {
       this.status = 'partial';
-    } else {
-      this.status = 'pending';
+    } else if ((this.advancePaid > 0 || this.totalPaid > 0) && this.status === 'draft') {
+      this.status = 'partial';
     }
   }
 
@@ -113,11 +113,11 @@ invoiceSchema.index({ status: 1, createdAt: -1, 'customer.name': 1, invoiceNo: 1
 invoiceSchema.index({ studioId: 1, eventDates: 1 });
 invoiceSchema.index({ 'staffAllocated.employeeId': 1 });
 
-invoiceSchema.pre('find', function() {
+invoiceSchema.pre('find', function () {
   this.where({ isDeleted: { $ne: true } });
 });
 
-invoiceSchema.pre('findOne', function() {
+invoiceSchema.pre('findOne', function () {
   this.where({ isDeleted: { $ne: true } });
 });
 
