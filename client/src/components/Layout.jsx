@@ -16,19 +16,19 @@ const navGroups = [
     ]
   },
   {
-    title: 'Invoice',
-    items: [
-      { to: '/invoices/new', label: 'New', icon: Plus, end: true },
-      { to: '/invoices', label: 'Manage', icon: FileText },
-    ]
-  },
-  {
     title: 'Master',
     items: [
       { to: '/master-customer', label: 'Customer', icon: User },
       { to: '/master-event', label: 'Event', icon: Calendar },
       { to: '/master-service', label: 'Service', icon: Briefcase },
       { to: '/master-crew', label: 'Crew', icon: User },
+    ]
+  },
+  {
+    title: 'Invoice',
+    items: [
+      { to: '/invoices/new', label: 'New', icon: Plus, end: true },
+      { to: '/invoices', label: 'Manage', icon: FileText },
     ]
   }
 ];
