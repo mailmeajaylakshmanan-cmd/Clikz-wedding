@@ -437,16 +437,20 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                 return (
                   <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
                     <td className="py-3 pr-4">
-                      <select
-                        className="input focus:ring-orange-500/20 focus:border-orange-500"
-                        value={s.service}
-                        onChange={function (e) { updateService(idx, 'service', e.target.value); }}
-                      >
-                        <option value="">Select service</option>
-                        {serviceOptions.map(function (opt) {
-                          return <option key={opt.name} value={opt.name}>{opt.name}</option>;
-                        })}
-                      </select>
+                      <div className="relative">
+                        <input
+                          list={`service-list-${idx}`}
+                          className="input focus:ring-orange-500/20 focus:border-orange-500 w-full"
+                          value={s.service}
+                          onChange={function (e) { updateService(idx, 'service', e.target.value); }}
+                          placeholder="Select or type..."
+                        />
+                        <datalist id={`service-list-${idx}`}>
+                          {serviceOptions.map(function (opt) {
+                            return <option key={opt.name} value={opt.name} />;
+                          })}
+                        </datalist>
+                      </div>
                     </td>
                     <td className="py-3 pr-4">
                       {getDescriptions(s.service).length > 0 ? (

@@ -147,8 +147,18 @@ export default function InvoiceView() {
   const payments = buildPayments(invoice);
   const totalPaid = sumPayments(payments) || Number(invoice.advancePaid) || 0;
   const hasBalance = invoice.balance > 0;
-  const showTerms = invoice.showTerms ?? invoice.eventCategory?.showTerms ?? true;
-  const termsText = invoice.termsAndConditions || invoice.eventCategory?.termsAndConditions || '';
+  const staticTerms = [
+    "20% advance payment is required to confirm the booking.",
+    "Balance payment must be completed on or before the event date.",
+    "Photo and video editing will be done in our professional style.",
+    "Delivery time for photos, videos, and album will be 30–45 working days.",
+    "Any additional hours or services will be charged extra.",
+    "Album printing will start only after client approval of the design.",
+    "Travel and accommodation charges may apply for outstation events.",
+    "Raw photos will be provided only if the client provides their own SSD or storage device.",
+    "Additional sheets will be charged at RS:500 each.",
+    "Once the booking is confirmed, the advance amount is non-refundable."
+  ];
   const categoryName = invoice.eventCategoryName || invoice.eventCategory?.name || '';
   return (
     <div>
@@ -351,17 +361,15 @@ export default function InvoiceView() {
         {/* {invoice.notes && (
           <p style={doc.notes}>{invoice.notes}</p>
         )} */}
-        {/* Terms & Conditions */}
-        {showTerms && termsText && (
-          <div style={doc.termsBox}>
-            <p style={doc.termsTitle}>Terms &amp; Conditions</p>
-            <div style={doc.termsBody}>
-              {termsText.split('\n').filter(Boolean).map((line, i) => (
-                <p key={i} style={doc.termsLine}>{line.trim()}</p>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Terms & Conditions (Forced onto second page for printing) */}
+        <div className="terms-page-break" style={doc.termsBox}>
+          <p style={doc.termsTitle}>Terms &amp; Conditions</p>
+          <ol style={{ margin: 0, paddingLeft: 18, color: '#475569', fontSize: 11, lineHeight: 1.6 }}>
+            {staticTerms.map((term, i) => (
+              <li key={i} style={{ marginBottom: 5 }}>{term}</li>
+            ))}
+          </ol>
+        </div>
         {/* Footer */}
         <div style={doc.footer}>
           <Film size={13} color={C.gold} style={{ flexShrink: 0 }} />
@@ -375,6 +383,7 @@ export default function InvoiceView() {
         }
         @media print {
           .print\\:hidden { display: none !important; }
+          .terms-page-break { page-break-before: always; margin-top: 40px !important; border: none !important; background: transparent !important; }
           #invoice-print {
             max-width: 100% !important;
             margin: 0 !important;
