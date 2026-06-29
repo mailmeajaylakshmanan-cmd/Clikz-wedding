@@ -227,6 +227,17 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     setForm(function (f) {
       return { ...f, showAdvance3: checked, advancePaid3: checked ? f.advancePaid3 : 0 };
     });
+  }
+
+  function toggleFinal(checked) {
+    setForm(function (f) {
+      return { ...f, showFinal: checked, totalPaid: checked ? f.totalPaid : 0 };
+    });
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const category = eventCategories.find(function (c) { return c._id === form.eventCategory; });
     onSubmit({
       ...form,
       subTotal,
@@ -632,6 +643,86 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                           <option value="Cash">Cash</option>
                           <option value="UPI">UPI</option>
                           <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Advance 2 */}
+              <div className="border-t border-slate-100 pt-3 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.showAdvance2}
+                    onChange={function (e) { toggleAdvance2(e.target.checked); }}
+                    className="w-4 h-4 accent-orange-500 rounded border-slate-300 cursor-pointer"
+                  />
+                  <span className="font-medium text-slate-700">2nd Advance Payment Received</span>
+                </label>
+                {form.showAdvance2 && (
+                  <div className="bg-orange-50/30 border border-orange-100/50 rounded-xl p-3 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">Amount Paid</span>
+                      <div className="relative w-32">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                        <input type="number" className="input pl-7 text-right focus:ring-orange-500/20 focus:border-orange-500 font-mono py-1"
+                          value={form.advancePaid2} onChange={function(e){setForm(f=>({...f, advancePaid2: e.target.value}))}} min="0" autoFocus />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Receipt Date</label>
+                        <DatePicker selected={form.advancePaymentDate2 ? parseISO(form.advancePaymentDate2) : null}
+                          onChange={function(date){setForm(f=>({...f, advancePaymentDate2: date ? format(date, 'yyyy-MM-dd') : ''}))}}
+                          dateFormat="dd/MM/yyyy" className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full" wrapperClassName="w-full" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Payment Method</label>
+                        <select className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500" value={form.advancePaymentMethod2}
+                          onChange={function(e){setForm(f=>({...f, advancePaymentMethod2: e.target.value}))}}>
+                          <option value="Cash">Cash</option><option value="UPI">UPI</option><option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Advance 3 */}
+              <div className="border-t border-slate-100 pt-3 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={form.showAdvance3}
+                    onChange={function (e) { toggleAdvance3(e.target.checked); }}
+                    className="w-4 h-4 accent-orange-500 rounded border-slate-300 cursor-pointer"
+                  />
+                  <span className="font-medium text-slate-700">3rd Advance Payment Received</span>
+                </label>
+                {form.showAdvance3 && (
+                  <div className="bg-orange-50/30 border border-orange-100/50 rounded-xl p-3 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">Amount Paid</span>
+                      <div className="relative w-32">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                        <input type="number" className="input pl-7 text-right focus:ring-orange-500/20 focus:border-orange-500 font-mono py-1"
+                          value={form.advancePaid3} onChange={function(e){setForm(f=>({...f, advancePaid3: e.target.value}))}} min="0" autoFocus />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Receipt Date</label>
+                        <DatePicker selected={form.advancePaymentDate3 ? parseISO(form.advancePaymentDate3) : null}
+                          onChange={function(date){setForm(f=>({...f, advancePaymentDate3: date ? format(date, 'yyyy-MM-dd') : ''}))}}
+                          dateFormat="dd/MM/yyyy" className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full" wrapperClassName="w-full" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Payment Method</label>
+                        <select className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500" value={form.advancePaymentMethod3}
+                          onChange={function(e){setForm(f=>({...f, advancePaymentMethod3: e.target.value}))}}>
+                          <option value="Cash">Cash</option><option value="UPI">UPI</option><option value="Bank Transfer">Bank Transfer</option>
                         </select>
                       </div>
                     </div>
