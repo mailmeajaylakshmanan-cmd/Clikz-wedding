@@ -42,6 +42,12 @@ const invoiceSchema = new mongoose.Schema({
   advancePaid: { type: Number, default: 0 },
   advancePaymentDate: { type: String, default: '' },
   advancePaymentMethod: { type: String, default: 'Cash' },
+  advancePaid2: { type: Number, default: 0 },
+  advancePaymentDate2: { type: String, default: '' },
+  advancePaymentMethod2: { type: String, default: 'Cash' },
+  advancePaid3: { type: Number, default: 0 },
+  advancePaymentDate3: { type: String, default: '' },
+  advancePaymentMethod3: { type: String, default: 'Cash' },
   totalPaid: { type: Number, default: 0 },
   totalPaymentDate: { type: String, default: '' },
   totalPaymentMethod: { type: String, default: 'Cash' },
@@ -92,7 +98,7 @@ invoiceSchema.pre('validate', async function (next) {
   }
 
   // Calculate and update balance
-  this.balance = this.total - (this.advancePaid || 0) - (this.totalPaid || 0);
+  this.balance = this.total - (this.advancePaid || 0) - (this.advancePaid2 || 0) - (this.advancePaid3 || 0) - (this.totalPaid || 0);
 
   // Auto-resolve status based on balance
   if (this.total > 0) {

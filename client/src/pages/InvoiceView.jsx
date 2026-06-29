@@ -57,6 +57,20 @@ function buildPayments(invoice) {
       amount: invoice.advancePaid,
     });
   }
+  if (Number(invoice.advancePaid2) > 0) {
+    payments.push({
+      date: invoice.advancePaymentDate2 || invoice.date,
+      method: invoice.advancePaymentMethod2 || 'Cash',
+      amount: invoice.advancePaid2,
+    });
+  }
+  if (Number(invoice.advancePaid3) > 0) {
+    payments.push({
+      date: invoice.advancePaymentDate3 || invoice.date,
+      method: invoice.advancePaymentMethod3 || 'Cash',
+      amount: invoice.advancePaid3,
+    });
+  }
   if (Number(invoice.totalPaid) > 0) {
     payments.push({
       date: invoice.totalPaymentDate || invoice.date,
@@ -345,13 +359,7 @@ export default function InvoiceView() {
             </div>
             <div style={doc.totalRow}>
               <span style={doc.totalLabel}>
-                {Number(invoice.advancePaid) > 0 && Number(invoice.totalPaid) > 0
-                  ? 'Total Paid'
-                  : Number(invoice.advancePaid) > 0
-                    ? 'Advance Paid'
-                    : Number(invoice.totalPaid) > 0
-                      ? 'Paid'
-                      : 'Advance Paid'}
+                {totalPaid > 0 ? 'Total Paid' : 'Amount Paid'}
               </span>
               <span style={{ ...doc.totalVal, color: C.bluePaid }}>{fmt(totalPaid)}</span>
             </div>

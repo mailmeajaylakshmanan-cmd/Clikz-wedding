@@ -45,6 +45,12 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       advancePaid: 0,
       advancePaymentDate: new Date().toISOString().substring(0, 10),
       advancePaymentMethod: 'Cash',
+      advancePaid2: 0,
+      advancePaymentDate2: new Date().toISOString().substring(0, 10),
+      advancePaymentMethod2: 'Cash',
+      advancePaid3: 0,
+      advancePaymentDate3: new Date().toISOString().substring(0, 10),
+      advancePaymentMethod3: 'Cash',
       totalPaid: 0,
       totalPaymentDate: new Date().toISOString().substring(0, 10),
       totalPaymentMethod: 'Cash',
@@ -53,6 +59,8 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       requiredStaff: 0,
       // checkbox-controlled visibility for the two payment blocks
       showAdvance: false,
+      showAdvance2: false,
+      showAdvance3: false,
       showFinal: false,
     };
     if (!initial) return base;
@@ -65,6 +73,8 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       requiredStaff: initial.requiredStaff || 0,
       // if editing an invoice that already has an amount recorded, open that section by default
       showAdvance: Number(initial.advancePaid) > 0,
+      showAdvance2: Number(initial.advancePaid2) > 0,
+      showAdvance3: Number(initial.advancePaid3) > 0,
       showFinal: Number(initial.totalPaid) > 0,
     };
   });
@@ -126,7 +136,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
   // Recalculate totals whenever services or discount change
   const subTotal = form.services.reduce(function (sum, s) { return sum + (Number(s.price) || 0); }, 0);
   const total = subTotal - Number(form.discount || 0);
-  const balance = total - Number(form.advancePaid || 0) - Number(form.totalPaid || 0);
+  const balance = total - Number(form.advancePaid || 0) - Number(form.advancePaid2 || 0) - Number(form.advancePaid3 || 0) - Number(form.totalPaid || 0);
 
   useEffect(function () {
     if (total > 0) {
@@ -144,7 +154,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
         }
       }
     }
-  }, [balance, total, form.status, form.advancePaid, form.totalPaid]);
+  }, [balance, total, form.status, form.advancePaid, form.advancePaid2, form.advancePaid3, form.totalPaid]);
 
   // Selecting a customer from the dropdown — this is the ONLY way customer gets set.
   function handleCustomerSelect(customerId) {
@@ -207,15 +217,16 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     });
   }
 
-  function toggleFinal(checked) {
+  function toggleAdvance2(checked) {
     setForm(function (f) {
-      return { ...f, showFinal: checked, totalPaid: checked ? f.totalPaid : 0 };
+      return { ...f, showAdvance2: checked, advancePaid2: checked ? f.advancePaid2 : 0 };
     });
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    const category = eventCategories.find(function (c) { return c._id === form.eventCategory; });
+  function toggleAdvance3(checked) {
+    setForm(function (f) {
+      return { ...f, showAdvance3: checked, advancePaid3: checked ? f.advancePaid3 : 0 };
+    });
     onSubmit({
       ...form,
       subTotal,
@@ -581,7 +592,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                     onChange={function (e) { toggleAdvance(e.target.checked); }}
                     className="w-4 h-4 accent-orange-500 rounded border-slate-300 cursor-pointer"
                   />
-                  <span className="font-medium text-slate-700">Advance Payment Received</span>
+                  <span className="font-medium text-slate-700">1st Advance Payment Received</span>
                 </label>
 
                 {form.showAdvance && (
@@ -637,7 +648,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                     onChange={function (e) { toggleFinal(e.target.checked); }}
                     className="w-4 h-4 accent-orange-500 rounded border-slate-300 cursor-pointer"
                   />
-                  <span className="font-medium text-slate-700">2nd / Final Payment Received</span>
+                  <span className="font-medium text-slate-700">Last Final Payment Received</span>
                 </label>
 
                 {form.showFinal && (

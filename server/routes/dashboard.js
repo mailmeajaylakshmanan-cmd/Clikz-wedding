@@ -27,7 +27,9 @@ router.get('/', auth, async (req, res) => {
             totalReceived: { $sum: '$advancePaid' }, // We'll add totalPaid below
             totalBalance: { $sum: '$balance' },
             totalDiscount: { $sum: '$discount' },
-            sumTotalPaid: { $sum: '$totalPaid' }
+            sumTotalPaid: { $sum: '$totalPaid' },
+            sumAdvancePaid2: { $sum: '$advancePaid2' },
+            sumAdvancePaid3: { $sum: '$advancePaid3' }
           },
         },
       ]),
@@ -46,7 +48,7 @@ router.get('/', auth, async (req, res) => {
     statusCounts.forEach(s => { statusMap[s._id] = s.count; });
 
     const revenue = revenueData[0] || { totalRevenue: 0, totalReceived: 0, totalBalance: 0, totalDiscount: 0, sumTotalPaid: 0 };
-    revenue.totalReceived = (revenue.totalReceived || 0) + (revenue.sumTotalPaid || 0);
+    revenue.totalReceived = (revenue.totalReceived || 0) + (revenue.sumTotalPaid || 0) + (revenue.sumAdvancePaid2 || 0) + (revenue.sumAdvancePaid3 || 0);
 
     // 1. Pipeline Invoices (Recent 15)
     const pipelineInvoices = await secureFind(Invoice, {}, req)
@@ -64,7 +66,7 @@ router.get('/', auth, async (req, res) => {
 
     // 3. Recent Transactions (Generate a mock ledger feed from recent invoices that have payments)
     const txInvoices = await secureFind(Invoice, {
-      $or: [{ advancePaid: { $gt: 0 } }, { totalPaid: { $gt: 0 } }]
+      $or: [{ advancePaid: { $gt: 0 } }, { advancePaid2: { $gt: 0 } }, { advancePaid3: { $gt: 0 } }, { totalPaid: { $gt: 0 } }]
     }, req).sort({ updatedAt: -1 }).limit(10).lean();
 
     const recentPayments = [];
@@ -74,7 +76,27 @@ router.get('/', auth, async (req, res) => {
           id: `${inv._id}_adv`,
           type: 'income',
           amount: inv.advancePaid,
-          description: `${inv.customer.name} Advance (${inv.advancePaymentMethod})`,
+          description: `${inv.customer.name} 1st Advance (${inv.advancePaymentMethod})`,
+          date: new Date(inv.updatedAt).toLocaleDateString(),
+          category: inv.eventCategoryName || 'Service'
+        });
+      }
+      if (inv.advancePaid2 > 0) {
+        recentPayments.push({
+          id: `${inv._id}_adv2`,
+          type: 'income',
+          amount: inv.advancePaid2,
+          description: `${inv.customer.name} 2nd Advance (${inv.advancePaymentMethod2})`,
+          date: new Date(inv.updatedAt).toLocaleDateString(),
+          category: inv.eventCategoryName || 'Service'
+        });
+      }
+      if (inv.advancePaid3 > 0) {
+        recentPayments.push({
+          id: `${inv._id}_adv3`,
+          type: 'income',
+          amount: inv.advancePaid3,
+          description: `${inv.customer.name} 3rd Advance (${inv.advancePaymentMethod3})`,
           date: new Date(inv.updatedAt).toLocaleDateString(),
           category: inv.eventCategoryName || 'Service'
         });
