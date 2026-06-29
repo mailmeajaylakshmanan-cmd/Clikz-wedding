@@ -108,7 +108,7 @@ export default function InvoiceView() {
         margin: [8, 8, 8, 8],
         filename: `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`,
         image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { scale: 2, useCORS: true, scrollY: -window.scrollY },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
