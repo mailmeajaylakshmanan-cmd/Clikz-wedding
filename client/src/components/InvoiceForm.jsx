@@ -213,13 +213,25 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
   // silently linger in the total if the user unchecks it.
   function toggleAdvance(checked) {
     setForm(function (f) {
-      return { ...f, showAdvance: checked, advancePaid: checked ? f.advancePaid : 0 };
+      const next = { ...f, showAdvance: checked, advancePaid: checked ? f.advancePaid : 0 };
+      if (!checked) {
+        next.showAdvance2 = false;
+        next.advancePaid2 = 0;
+        next.showAdvance3 = false;
+        next.advancePaid3 = 0;
+      }
+      return next;
     });
   }
 
   function toggleAdvance2(checked) {
     setForm(function (f) {
-      return { ...f, showAdvance2: checked, advancePaid2: checked ? f.advancePaid2 : 0 };
+      const next = { ...f, showAdvance2: checked, advancePaid2: checked ? f.advancePaid2 : 0 };
+      if (!checked) {
+        next.showAdvance3 = false;
+        next.advancePaid3 = 0;
+      }
+      return next;
     });
   }
 
@@ -651,6 +663,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               </div>
 
               {/* Advance 2 */}
+              {form.showAdvance && (
               <div className="border-t border-slate-100 pt-3 space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
@@ -689,8 +702,10 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                   </div>
                 )}
               </div>
+              )}
 
               {/* Advance 3 */}
+              {form.showAdvance2 && (
               <div className="border-t border-slate-100 pt-3 space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
@@ -729,6 +744,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                   </div>
                 )}
               </div>
+              )}
 
               {/* Final / Settlement Payment — checkbox-gated */}
               <div className="border-t border-slate-100 pt-3 space-y-3">
