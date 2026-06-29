@@ -392,7 +392,7 @@ export default function InvoiceView() {
         {/* Footer */}
         <div style={doc.footer}>
           <Film size={13} color={C.gold} style={{ flexShrink: 0 }} />
-          <span>Thank you for choosing <strong style={{ color: C.white }}>CLIKZ Wedding Films</strong> — we're honoured to be part of your story.</span>
+          <span>Thank you for choosing <strong style={{ color: C.white }}>CLIKZ Wedding Films</strong> — we&apos;re honoured to be part of your story.</span>
         </div>
       </div>
       <style>{`
