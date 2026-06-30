@@ -6,7 +6,7 @@ const serviceSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   name: { type: String, required: true },
   descriptions: [{ type: String }],
-  categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'EventCategory' }],
+  category: { type: mongoose.Schema.Types.ObjectId, ref: 'EventCategory', required: true },
 }, { timestamps: true });
 
 serviceSchema.pre('find', function() {
