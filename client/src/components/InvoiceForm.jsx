@@ -3,14 +3,12 @@ import api from '../api/axios.js';
 import {
   User, Phone, Calendar, MapPin, Plus, Trash2,
   Settings, BadgeCheck, Sparkles, Layers, Receipt,
-  AlertCircle, ShoppingBag, Hash
+  AlertCircle, ShoppingBag, Hash, Home, CheckSquare
 } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format, parseISO } from 'date-fns';
-import CreatableSelect from 'react-select/creatable';
-
-const emptyService = { service: '', description: '', price: '', total: 0 };
+import Select from 'react-select';
 
 // "21/05/2026 & 24/06/2026" -> ["2026-05-21", "2026-06-24"] (native <input type="date"> needs ISO)
 function parseEventDateString(str) {
@@ -35,12 +33,13 @@ function toDisplayDate(iso) {
 export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSelect }) {
   const [form, setForm] = useState(function () {
     const base = {
-      customer: { name: '', phone: '' },
+      customer: { name: '', phone: '', address: '' },
       eventCategory: '',
       event: '',
       eventDate: '',
       location: '',
-      services: [{ ...emptyService }],
+      services: [],
+      subTotal: 0,
       discount: 0,
       advancePaid: 0,
       advancePaymentDate: new Date().toISOString().substring(0, 10),
@@ -69,9 +68,9 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       ...initial,
       eventCategory: initial.eventCategory?._id || initial.eventCategory || '',
       customer: initial.customer || base.customer,
-      services: initial.services?.length ? initial.services : base.services,
+      services: initial.services || [],
+      subTotal: initial.subTotal || 0,
       requiredStaff: initial.requiredStaff || 0,
-      // if editing an invoice that already has an amount recorded, open that section by default
       showAdvance: Number(initial.advancePaid) > 0,
       showAdvance2: Number(initial.advancePaid2) > 0,
       showAdvance3: Number(initial.advancePaid3) > 0,
@@ -118,7 +117,6 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
 
   useEffect(function () {
     api.get('/event-categories').then(function (res) { setEventCategories(res.data); });
-    // Load the full customer list once — selection is made from this list only.
     api.get('/customers').then(function (res) { setCustomers(res.data); });
   }, []);
 
@@ -133,8 +131,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     });
   }, [form.eventCategory, initial?.eventCategory]);
 
-  // Recalculate totals whenever services or discount change
-  const subTotal = form.services.reduce(function (sum, s) { return sum + (Number(s.price) || 0); }, 0);
+  const subTotal = Number(form.subTotal || 0);
   const total = subTotal - Number(form.discount || 0);
   const balance = total - Number(form.advancePaid || 0) - Number(form.advancePaid2 || 0) - Number(form.advancePaid3 || 0) - Number(form.totalPaid || 0);
 
@@ -156,47 +153,6 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     }
   }, [balance, total, form.status, form.advancePaid, form.advancePaid2, form.advancePaid3, form.totalPaid]);
 
-  // Selecting a customer from the dropdown — this is the ONLY way customer gets set.
-  function handleCustomerSelect(customerId) {
-    if (!customerId) {
-      setForm(function (f) { return { ...f, customer: { name: '', phone: '' } }; });
-      return;
-    }
-    const c = customers.find(function (cu) { return cu._id === customerId; });
-    if (!c) return;
-    setForm(function (f) { return { ...f, customer: { _id: c._id, name: c.name, phone: c.phone } }; });
-    if (onCustomerSelect) onCustomerSelect(c);
-  }
-
-  // Try to match the current form.customer back to an entry in the loaded list
-  // (handles edit mode, where initial.customer is a snapshot taken at invoice time).
-  const matchedCustomer = customers.find(function (c) {
-    return c._id === form.customer?._id || (form.customer?.phone && c.phone === form.customer.phone);
-  });
-
-  function updateService(idx, field, val) {
-    setForm(function (f) {
-      const services = f.services.map(function (s, i) {
-        if (i !== idx) return s;
-        const updated = { ...s, [field]: val };
-        updated.total = Number(updated.price) || 0;
-        return updated;
-      });
-      return { ...f, services };
-    });
-  }
-
-  function addService() {
-    setForm(function (f) { return { ...f, services: [...f.services, { ...emptyService }] }; });
-  }
-
-  function removeService(idx) {
-    setForm(function (f) {
-      return { ...f, services: f.services.filter(function (_, i) { return i !== idx; }) };
-    });
-  }
-
-  // Handle manual category change
   function handleCategoryChange(categoryId) {
     const category = eventCategories.find(function (c) { return c._id === categoryId; });
     setForm(function (f) {
@@ -204,13 +160,42 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
         ...f,
         eventCategory: categoryId,
         event: category?.name || f.event,
-        services: [{ ...emptyService }],
+        // Clear services when category changes to avoid mismatch
+        services: [],
       };
     });
   }
 
-  // Toggle the advance-payment block; clears the amount when hidden so it doesn't
-  // silently linger in the total if the user unchecks it.
+  // Toggle a service checkbox
+  function toggleService(serviceName, isChecked, defaultDescription = '') {
+    setForm(f => {
+      if (isChecked) {
+        return {
+          ...f,
+          services: [...f.services, { service: serviceName, description: defaultDescription, price: 0, total: 0 }]
+        };
+      } else {
+        return {
+          ...f,
+          services: f.services.filter(s => s.service !== serviceName)
+        };
+      }
+    });
+  }
+
+  // Update description for a checked service
+  function updateServiceDescription(serviceName, description) {
+    setForm(f => {
+      const services = f.services.map(s => {
+        if (s.service === serviceName) {
+          return { ...s, description };
+        }
+        return s;
+      });
+      return { ...f, services };
+    });
+  }
+
   function toggleAdvance(checked) {
     setForm(function (f) {
       const next = { ...f, showAdvance: checked, advancePaid: checked ? f.advancePaid : 0 };
@@ -249,6 +234,9 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
 
   function handleSubmit(e) {
     e.preventDefault();
+    if (!form.customer.name) {
+      return alert("Please select a customer.");
+    }
     const category = eventCategories.find(function (c) { return c._id === form.eventCategory; });
     onSubmit({
       ...form,
@@ -262,10 +250,9 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     });
   }
 
-  const getDescriptions = function (serviceName) {
-    const found = serviceOptions.find(function (s) { return s.name === serviceName; });
-    return found ? found.descriptions : [];
-  };
+  const selectedCustomer = form.customer?.name && form.customer?._id 
+    ? { value: form.customer._id, label: `${form.customer.name} — ${form.customer.phone}` }
+    : null;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl mx-auto">
@@ -277,7 +264,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
           Invoice Number
         </div>
         <span className="font-mono font-bold text-slate-800 text-sm">
-          {initial?.invoiceNumber || initial?.invoiceId || 'Auto-generated on save'}
+          {initial?.invoiceNumber || initial?.invoiceNo || 'Auto-generated on save'}
         </span>
       </div>
 
@@ -291,32 +278,26 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Customer — input with datalist (select or type new) */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Customer *</label>
             <div className="relative z-50">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10 pointer-events-none">
-                <User size={14} />
-              </span>
-              <CreatableSelect
+              <Select
                 isClearable
-                placeholder="Type or select a customer"
+                placeholder="Select a customer from master..."
                 options={customers.filter(c => c.isActive !== false || c._id === form.customer?._id).map(c => ({ value: c._id, label: `${c.name} — ${c.phone}`, customer: c }))}
-                value={form.customer?.name ? { value: form.customer._id || 'new', label: form.customer.name } : null}
-                onChange={(selected, actionMeta) => {
+                value={selectedCustomer}
+                onChange={(selected) => {
                   if (!selected) {
-                    setForm(f => ({ ...f, customer: { name: '', phone: '' } }));
-                  } else if (actionMeta.action === 'create-option') {
-                    setForm(f => ({ ...f, customer: { _id: undefined, name: selected.value, phone: '' } }));
+                    setForm(f => ({ ...f, customer: { name: '', phone: '', address: '' } }));
                   } else {
                     const matched = selected.customer;
-                    setForm(f => ({ ...f, customer: { _id: matched._id, name: matched.name, phone: matched.phone } }));
+                    setForm(f => ({ ...f, customer: { _id: matched._id, name: matched.name, phone: matched.phone, address: matched.address || '' } }));
+                    if (onCustomerSelect) onCustomerSelect(matched);
                   }
                 }}
                 styles={{
                   control: (base) => ({
                     ...base,
-                    paddingLeft: '2rem',
                     borderColor: '#e2e8f0',
                     borderRadius: '0.5rem',
                     boxShadow: 'none',
@@ -325,247 +306,210 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                 }}
               />
             </div>
-            {form.customer?.name && !matchedCustomer && (
-              <p className="text-[11px] text-amber-600 mt-1.5 flex items-center gap-1">
-                <AlertCircle size={11} />
-                New customer. Their details will be saved on this invoice.
-              </p>
-            )}
           </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Phone *</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <Phone size={14} />
-              </span>
-              <input
-                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
-                value={form.customer.phone}
-                onChange={function (e) { setForm(f => ({ ...f, customer: { ...f.customer, phone: e.target.value } })); }}
-                placeholder="Phone number"
-                required
-              />
+          
+          {/* Read Only Details */}
+          {form.customer.name ? (
+            <div className="md:col-span-1 bg-slate-50 border border-slate-100 rounded-lg p-3 space-y-2">
+              <div className="flex items-start gap-2">
+                <Phone size={14} className="text-slate-400 mt-0.5" />
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone</div>
+                  <div className="text-sm font-medium text-slate-700">{form.customer.phone}</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Home size={14} className="text-slate-400 mt-0.5" />
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Address</div>
+                  <div className="text-sm font-medium text-slate-700">{form.customer.address || <span className="italic text-slate-400">No address provided</span>}</div>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+             <div className="md:col-span-1 border border-dashed border-slate-200 rounded-lg p-3 flex items-center justify-center text-slate-400 text-sm italic bg-slate-50/50">
+               Select a customer to view details
+             </div>
+          )}
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Event Category *</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <ShoppingBag size={14} />
-              </span>
-              <select
-                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%239CA3AF%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
-                value={form.eventCategory || initial?.eventCategory?._id || initial?.eventCategory || ''}
-                onChange={function (e) { handleCategoryChange(e.target.value); }}
-                required
-              >
-                <option value="">Select category</option>
-                {eventCategories.filter(c => c.isActive !== false || c._id === form.eventCategory).map(function (c) {
-                  return <option key={c._id} value={c._id}>{c.name}</option>;
-                })}
-              </select>
+          <div className="md:col-span-2 border-t border-slate-100 pt-5 mt-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Event Category *</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <ShoppingBag size={14} />
+                </span>
+                <select
+                  className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%239CA3AF%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
+                  value={form.eventCategory || ''}
+                  onChange={function (e) { handleCategoryChange(e.target.value); }}
+                  required
+                >
+                  <option value="">Select category</option>
+                  {eventCategories.filter(c => c.isActive !== false || c._id === form.eventCategory).map(function (c) {
+                    return <option key={c._id} value={c._id}>{c.name}</option>;
+                  })}
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Event Label</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <Sparkles size={14} />
-              </span>
-              <input
-                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
-                value={form.event}
-                onChange={function (e) { setForm(function (f) { return { ...f, event: e.target.value }; }); }}
-                placeholder="Engagement & Wedding"
-              />
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Event Label</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Sparkles size={14} />
+                </span>
+                <input
+                  className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
+                  value={form.event}
+                  onChange={function (e) { setForm(function (f) { return { ...f, event: e.target.value }; }); }}
+                  placeholder="Engagement & Wedding"
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Event Date(s)</label>
-            <div className="space-y-2">
-              {eventDates.map(function (d, idx) {
-                return (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10">
-                        <Calendar size={14} />
-                      </span>
-                      <DatePicker
-                        selected={d ? (typeof d === 'string' ? parseISO(d) : d) : null}
-                        onChange={function (date) { 
-                           updateEventDate(idx, date ? format(date, 'yyyy-MM-dd') : ''); 
-                        }}
-                        dateFormat="dd/MM/yyyy"
-                        className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500 w-full"
-                        placeholderText="Select date"
-                        wrapperClassName="w-full"
-                      />
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Event Date(s)</label>
+              <div className="space-y-2">
+                {eventDates.map(function (d, idx) {
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10">
+                          <Calendar size={14} />
+                        </span>
+                        <DatePicker
+                          selected={d ? (typeof d === 'string' ? parseISO(d) : d) : null}
+                          onChange={function (date) { 
+                             updateEventDate(idx, date ? format(date, 'yyyy-MM-dd') : ''); 
+                          }}
+                          dateFormat="dd/MM/yyyy"
+                          className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500 w-full"
+                          placeholderText="Select date"
+                          wrapperClassName="w-full"
+                        />
+                      </div>
+                      {eventDates.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={function () { removeEventDate(idx); }}
+                          className="p-1.5 text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
+                          title="Remove date"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
-                    {eventDates.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={function () { removeEventDate(idx); }}
-                        className="p-1.5 text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
-                        title="Remove date"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={addEventDate}
+                className="flex items-center gap-1 text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 font-bold px-2.5 py-1 rounded-lg text-[11px] mt-2 transition-colors"
+              >
+                <Plus size={12} /> Add another date
+              </button>
+              {form.eventDate && (
+                <p className="text-[11px] text-slate-400 mt-1.5">Saved as: {form.eventDate}</p>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={addEventDate}
-              className="flex items-center gap-1 text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 font-bold px-2.5 py-1 rounded-lg text-[11px] mt-2 transition-colors"
-            >
-              <Plus size={12} /> Add another date
-            </button>
-            {form.eventDate && (
-              <p className="text-[11px] text-slate-400 mt-1.5">Saved as: {form.eventDate}</p>
-            )}
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Location</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <MapPin size={14} />
-              </span>
-              <input
-                className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
-                value={form.location}
-                onChange={function (e) { setForm(function (f) { return { ...f, location: e.target.value }; }); }}
-                placeholder="Kulasekharam, Kanyakumari"
-              />
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Location</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <MapPin size={14} />
+                </span>
+                <input
+                  className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500"
+                  value={form.location}
+                  onChange={function (e) { setForm(function (f) { return { ...f, location: e.target.value }; }); }}
+                  placeholder="Kulasekharam, Kanyakumari"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Services List */}
+      {/* 2. Services Selection */}
       <div className="card p-6 border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <div className="p-1.5 bg-orange-50 text-orange-600 rounded-lg">
-              <Layers size={16} />
+              <CheckSquare size={16} />
             </div>
-            <h2 className="font-semibold text-slate-800">Services & Coverages</h2>
+            <h2 className="font-semibold text-slate-800">Required Services</h2>
           </div>
           {!form.eventCategory && !(initial?.eventCategory?._id || initial?.eventCategory) && (
             <span className="text-[10px] bg-orange-50 text-orange-700 font-bold px-2 py-1 rounded border border-orange-100 flex items-center gap-1">
-              <AlertCircle size={10} /> Choose Category to load options
+              <AlertCircle size={10} /> Choose Category above
             </span>
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-slate-700 text-sm">
-            <thead>
-              <tr className="text-left border-b border-slate-100">
-                <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider w-1/3">Service</th>
-                <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider w-1/3">Description</th>
-                <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider w-1/4">Price (₹)</th>
-                <th className="pb-3 w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {form.services.map(function (s, idx) {
+        {form.eventCategory ? (
+           serviceOptions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {serviceOptions.filter(opt => opt.isActive !== false).map((opt) => {
+                const isChecked = form.services.some(s => s.service === opt.name);
+                const currentService = form.services.find(s => s.service === opt.name);
+                
                 return (
-                  <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
-                    <td className="py-3 pr-4">
-                      <div className="relative">
-                        <CreatableSelect
-                          isMulti
-                          isClearable
-                          placeholder="Select or type..."
-                          options={serviceOptions.filter(opt => opt.isActive !== false).map(opt => ({ value: opt.name, label: opt.name }))}
-                          value={s.service ? s.service.split(', ').map(v => ({ value: v, label: v })) : []}
-                          onChange={(selected) => {
-                            const val = selected ? selected.map(item => item.value).join(', ') : '';
-                            updateService(idx, 'service', val);
-                          }}
-                          menuPortalTarget={document.body}
-                          menuPosition="fixed"
-                          styles={{
-                            control: (base) => ({
-                              ...base,
-                              borderColor: '#e2e8f0',
-                              borderRadius: '0.5rem',
-                              boxShadow: 'none',
-                              minWidth: '150px',
-                              '&:hover': { borderColor: '#cbd5e1' }
-                            }),
-                            menuPortal: (base) => ({ ...base, zIndex: 9999 })
-                          }}
-                        />
+                  <div key={opt._id} className={`border rounded-xl p-4 transition-colors ${isChecked ? 'border-orange-400 bg-orange-50/20' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        className="mt-1 w-4 h-4 accent-orange-500 rounded border-slate-300 cursor-pointer"
+                        checked={isChecked}
+                        onChange={(e) => toggleService(opt.name, e.target.checked, opt.descriptions && opt.descriptions.length > 0 ? opt.descriptions[0] : '')}
+                      />
+                      <div className="flex-1">
+                        <span className="font-semibold text-slate-800 block">{opt.name}</span>
+                        {isChecked && opt.descriptions && opt.descriptions.length > 0 && (
+                           <div className="mt-3">
+                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Description / Details</label>
+                             <select
+                               className="input py-1.5 text-sm focus:ring-orange-500/20 focus:border-orange-500"
+                               value={currentService?.description || ''}
+                               onChange={(e) => updateServiceDescription(opt.name, e.target.value)}
+                               onClick={(e) => e.preventDefault()}
+                             >
+                               {opt.descriptions.map((desc, i) => (
+                                 <option key={i} value={desc}>{desc}</option>
+                               ))}
+                             </select>
+                           </div>
+                        )}
+                        {isChecked && (!opt.descriptions || opt.descriptions.length === 0) && (
+                           <div className="mt-3">
+                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Custom Details</label>
+                             <input
+                               className="input py-1.5 text-sm focus:ring-orange-500/20 focus:border-orange-500"
+                               placeholder="Optional details..."
+                               value={currentService?.description || ''}
+                               onChange={(e) => updateServiceDescription(opt.name, e.target.value)}
+                               onClick={(e) => e.preventDefault()}
+                             />
+                           </div>
+                        )}
                       </div>
-                    </td>
-                    <td className="py-3 pr-4">
-                      {getDescriptions(s.service).length > 0 ? (
-                        <select
-                          className="input focus:ring-orange-500/20 focus:border-orange-500"
-                          value={s.description}
-                          onChange={function (e) { updateService(idx, 'description', e.target.value); }}
-                        >
-                          <option value="">Select description type</option>
-                          {getDescriptions(s.service).map(function (d) {
-                            return <option key={d} value={d}>{d}</option>;
-                          })}
-                        </select>
-                      ) : (
-                        <input
-                          className="input focus:ring-orange-500/20 focus:border-orange-500"
-                          value={s.description}
-                          onChange={function (e) { updateService(idx, 'description', e.target.value); }}
-                          placeholder="Provide coverage details..."
-                        />
-                      )}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">₹</span>
-                        <input
-                          type="number"
-                          className="input pl-7 focus:ring-orange-500/20 focus:border-orange-500 text-right font-mono"
-                          value={s.price}
-                          onChange={function (e) { updateService(idx, 'price', e.target.value); }}
-                          placeholder="0"
-                          min="0"
-                        />
-                      </div>
-                    </td>
-                    <td className="py-3 text-center">
-                      {form.services.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={function () { removeService(idx); }}
-                          className="p-1 text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
-                          title="Remove service"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                    </label>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-
-        <button
-          type="button"
-          onClick={addService}
-          className="flex items-center gap-1 text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 font-bold px-3 py-1.5 rounded-lg text-xs mt-3 transition-colors"
-        >
-          <Plus size={14} /> Add Service Row
-        </button>
+            </div>
+           ) : (
+            <div className="text-center py-8 text-slate-400 text-sm border border-dashed border-slate-200 rounded-xl">
+              No services found for this category. Add them in Master Service.
+            </div>
+           )
+        ) : (
+          <div className="text-center py-8 text-slate-400 text-sm border border-dashed border-slate-200 rounded-xl">
+            Please select an Event Category to view available services.
+          </div>
+        )}
       </div>
 
       {/* 3. Payments & Settings Panel */}
@@ -581,13 +525,24 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               <h2 className="font-semibold text-slate-800">Billing Breakdown</h2>
             </div>
 
-            <div className="space-y-3.5 text-sm text-slate-600">
-              <div className="flex justify-between items-center">
-                <span>Subtotal Amount</span>
-                <span className="font-semibold text-slate-800 font-mono">₹{subTotal.toLocaleString('en-IN')}</span>
+            <div className="space-y-4 text-sm text-slate-600">
+              
+              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <span className="font-semibold text-slate-800">Total Event Price *</span>
+                <div className="relative w-32">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">₹</span>
+                  <input
+                    type="number"
+                    required
+                    className="input pl-7 text-right focus:ring-orange-500/20 focus:border-orange-500 font-mono py-1.5 font-bold"
+                    value={form.subTotal}
+                    onChange={function (e) { setForm(function (f) { return { ...f, subTotal: e.target.value }; }); }}
+                    min="0"
+                  />
+                </div>
               </div>
 
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center px-1">
                 <span>Discount applied</span>
                 <div className="relative w-32">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
@@ -601,13 +556,13 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-3 flex justify-between items-center font-bold text-slate-800">
-                <span>Total Amount</span>
-                <span className="text-orange-600 text-lg font-extrabold font-mono">₹{total.toLocaleString('en-IN')}</span>
+              <div className="border-t border-slate-200 pt-3 flex justify-between items-center font-bold text-slate-800 px-1">
+                <span>Final Total Amount</span>
+                <span className="text-orange-600 text-xl font-extrabold font-mono">₹{total.toLocaleString('en-IN')}</span>
               </div>
 
               {/* Advance Payment — checkbox-gated */}
-              <div className="border-t border-slate-100 pt-3 space-y-3">
+              <div className="border-t border-slate-100 pt-3 space-y-3 px-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -664,7 +619,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
 
               {/* Advance 2 */}
               {form.showAdvance && (
-              <div className="border-t border-slate-100 pt-3 space-y-3">
+              <div className="border-t border-slate-100 pt-3 space-y-3 px-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -706,7 +661,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
 
               {/* Advance 3 */}
               {form.showAdvance2 && (
-              <div className="border-t border-slate-100 pt-3 space-y-3">
+              <div className="border-t border-slate-100 pt-3 space-y-3 px-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -747,7 +702,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               )}
 
               {/* Final / Settlement Payment — checkbox-gated */}
-              <div className="border-t border-slate-100 pt-3 space-y-3">
+              <div className="border-t border-slate-100 pt-3 space-y-3 px-1">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -801,97 +756,67 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                   </div>
                 )}
               </div>
+
             </div>
           </div>
-
-          {/* Balance Indicator block */}
-          <div className="mt-6">
-            {balance <= 0 && total > 0 ? (
-              <div className="flex items-center justify-between bg-orange-50 border border-orange-200 px-4 py-3.5 rounded-xl shadow-inner">
-                <span className="text-orange-800 font-bold text-sm flex items-center gap-1.5">
-                  <BadgeCheck size={16} className="text-orange-600 animate-bounce" />
-                  Paid in Full
-                </span>
-                <span className="text-orange-700 font-extrabold text-lg font-mono">₹0</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between bg-orange-50/50 border border-orange-200/50 px-4 py-3.5 rounded-xl">
-                <span className="text-orange-800 font-bold text-sm">Remaining Balance</span>
-                <span className="text-orange-700 font-extrabold text-lg font-mono">₹{balance.toLocaleString('en-IN')}</span>
-              </div>
-            )}
+          
+          <div className="mt-6 pt-5 border-t border-slate-100 flex justify-between items-center">
+            <span className="text-slate-500 font-medium">Pending Balance</span>
+            <span className={`text-xl font-bold font-mono ${balance > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+              ₹{Math.max(0, balance).toLocaleString('en-IN')}
+            </span>
           </div>
         </div>
 
-        {/* Right Side: Invoice Settings */}
-        <div className="card p-6 border-l-4 border-l-orange-500 hover:shadow-md transition-shadow flex flex-col justify-between">
-          <div className="space-y-5">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-orange-50 text-orange-600 rounded-lg">
+        {/* Right Side: Extras & Submit */}
+        <div className="space-y-6">
+          <div className="card p-6 border-l-4 border-l-slate-400">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-1.5 bg-slate-100 text-slate-600 rounded-lg">
                 <Settings size={16} />
               </div>
-              <h2 className="font-semibold text-slate-800">Invoice Status & Settings</h2>
+              <h2 className="font-semibold text-slate-800">Additional Details</h2>
             </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5 flex items-center gap-1">
+                  Required Photographers/Staff
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    value={form.requiredStaff}
+                    onChange={e => setForm(f => ({ ...f, requiredStaff: Number(e.target.value) }))}
+                    className="flex-1 accent-orange-500"
+                  />
+                  <span className="w-10 text-center font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded py-1 text-sm">{form.requiredStaff}</span>
+                </div>
+              </div>
 
-            {/* Custom Interactive Status buttons */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-2">Invoice Status</label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { key: 'pending', label: 'Pending' },
-                  { key: 'partial', label: 'Partial' },
-                  { key: 'paid', label: 'Paid' }
-                ].map(item => (
-                  <label key={item.key} className="cursor-pointer">
-                    <input
-                      type="radio"
-                      name="status"
-                      value={item.key}
-                      checked={form.status === item.key}
-                      onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))}
-                      className="sr-only peer"
-                    />
-                    <div className="text-center py-2.5 text-xs font-semibold text-slate-500 border border-slate-200 rounded-xl transition-all peer-checked:bg-orange-50 peer-checked:text-orange-700 peer-checked:border-orange-200 hover:bg-orange-50/30 peer-checked:ring-2 peer-checked:ring-orange-500/10">
-                      {item.label}
-                    </div>
-                  </label>
-                ))}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5">Note to Customer (Prints on Invoice)</label>
+                <textarea
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white text-slate-700 font-medium resize-none"
+                  rows="3"
+                  value={form.notes}
+                  onChange={function (e) { setForm(function (f) { return { ...f, notes: e.target.value }; }); }}
+                  placeholder="Thank you for your business!"
+                ></textarea>
               </div>
             </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Required Dispatch Staff</label>
-              <input
-                type="number"
-                className="input focus:ring-orange-500/20 focus:border-orange-500"
-                value={form.requiredStaff}
-                onChange={function (e) { setForm(function (f) { return { ...f, requiredStaff: Number(e.target.value) || 0 }; }); }}
-                placeholder="e.g. 3 crew members"
-                min="0"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1.5">Invoice Notes</label>
-              <textarea
-                className="input resize-none focus:ring-orange-500/20 focus:border-orange-500"
-                rows={3}
-                value={form.notes}
-                onChange={function (e) { setForm(function (f) { return { ...f, notes: e.target.value }; }); }}
-                placeholder="Message displayed at bottom of bill..."
-              />
-            </div>
           </div>
 
-          <div className="flex justify-end pt-5">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-orange-100 hover:shadow-orange-200 active:scale-95 text-center text-sm disabled:opacity-50"
-            >
-              {loading ? 'Saving invoice data...' : 'Save & Compile Bill'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-200 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            <BadgeCheck size={20} />
+            {loading ? 'Processing...' : (initial ? 'Update Invoice' : 'Generate Final Invoice')}
+          </button>
         </div>
 
       </div>

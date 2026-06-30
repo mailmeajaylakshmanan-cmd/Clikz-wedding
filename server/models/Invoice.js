@@ -26,6 +26,7 @@ const invoiceSchema = new mongoose.Schema({
   customer: {
     name: { type: String, required: true },
     phone: { type: String, required: true },
+    address: { type: String, default: '' },
   },
   event: { type: String, default: '' },
   eventCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'EventCategory' },
