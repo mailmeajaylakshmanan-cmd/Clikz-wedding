@@ -16,7 +16,6 @@ export default function MasterCustomer() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [editId, setEditId] = useState(null);
 
@@ -28,10 +27,10 @@ export default function MasterCustomer() {
     
     try {
       if (editId) {
-        await api.put('/customers/' + editId, { name, phone, email, address });
+        await api.put('/customers/' + editId, { name, phone, address });
         toast.success('Customer updated');
       } else {
-        await api.post('/customers', { name, phone, email, address });
+        await api.post('/customers', { name, phone, address });
         toast.success('Customer added');
       }
       handleCancelEdit();
@@ -45,7 +44,6 @@ export default function MasterCustomer() {
     setEditId(null);
     setName('');
     setPhone('');
-    setEmail('');
     setAddress('');
     setIsModalOpen(true);
   }
@@ -54,7 +52,6 @@ export default function MasterCustomer() {
     setEditId(customer._id);
     setName(customer.name);
     setPhone(customer.phone);
-    setEmail(customer.email || '');
     setAddress(customer.address || '');
     setIsModalOpen(true);
   }
@@ -63,7 +60,6 @@ export default function MasterCustomer() {
     setEditId(null);
     setName('');
     setPhone('');
-    setEmail('');
     setAddress('');
     setIsModalOpen(false);
   }
@@ -104,7 +100,7 @@ export default function MasterCustomer() {
               <tr className="bg-slate-50/80 border-b border-slate-200">
                 <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Name</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Phone</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Email</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Address</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
@@ -127,7 +123,7 @@ export default function MasterCustomer() {
                 <tr key={customer._id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4.5 font-semibold text-slate-800 text-sm">{customer.name}</td>
                   <td className="px-6 py-4.5 text-slate-600 font-medium text-sm">{customer.phone}</td>
-                  <td className="px-6 py-4.5 text-slate-500 text-sm">{customer.email || '—'}</td>
+                  <td className="px-6 py-4.5 text-slate-500 text-sm">{customer.address || '—'}</td>
                   <td className="px-6 py-4.5 text-right">
                     <div className="flex justify-end gap-2">
                       <button
@@ -189,16 +185,6 @@ export default function MasterCustomer() {
                     onChange={e => setPhone(e.target.value)}
                     placeholder="Phone Number"
                     required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email</label>
-                  <input
-                    type="email"
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white text-slate-700 font-medium"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="Email Address (optional)"
                   />
                 </div>
                 <div>
