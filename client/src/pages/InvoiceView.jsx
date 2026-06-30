@@ -113,8 +113,8 @@ export default function InvoiceView() {
       const opt = {
         margin: [10, 10, 10, 10],
         filename: `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
@@ -172,7 +172,7 @@ export default function InvoiceView() {
   const payments = buildPayments(invoice);
   const totalPaid = sumPayments(payments) || Number(invoice.advancePaid) || 0;
   const hasBalance = invoice.balance > 0;
-  
+
   const staticTerms = [
     "20% advance payment is required to confirm the booking.",
     "Balance payment must be completed on or before the event date.",
@@ -235,7 +235,7 @@ export default function InvoiceView() {
 
       {/* ── Invoice document ── */}
       <div id="invoice-print" ref={printRef} style={{ ...doc.wrap, position: 'relative' }}>
-        
+
         {/* Subtle Watermark */}
         <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.08, pointerEvents: 'none', zIndex: 0 }}>
           <img src={clikzLogo} alt="" style={{ width: 500, height: 'auto', filter: 'grayscale(100%)' }} />
@@ -391,9 +391,9 @@ export default function InvoiceView() {
                 <span style={{ ...doc.totalVal, color: C.greenPaid }}>− {fmt(invoice.discount)}</span>
               </div>
             )}
-            
+
             <div style={{ borderTop: `1px solid ${C.border}`, margin: '8px 0' }} />
-            
+
             <div style={doc.totalRow}>
               <span style={{ ...doc.totalLabel, fontWeight: 700, color: C.ink, fontSize: 14 }}>Total Amount</span>
               <span style={{ ...doc.totalVal, fontWeight: 800, color: C.ink, fontSize: 15 }}>{fmt(invoice.total)}</span>
@@ -404,7 +404,7 @@ export default function InvoiceView() {
               </span>
               <span style={{ ...doc.totalVal, color: C.muted }}>{fmt(totalPaid)}</span>
             </div>
-            
+
             {hasBalance ? (
               <div style={doc.balanceDue}>
                 <span style={{ fontWeight: 700, color: C.redBal, fontSize: 14 }}>Balance Due</span>
@@ -432,7 +432,8 @@ export default function InvoiceView() {
 
         {/* Footer */}
         <div style={doc.footer}>
-          <span>Thank you for choosing <strong>CLIKZ Wedding Films</strong>. We are honoured to be part of your story!</span>
+          <Film size={13} color={C.gold} style={{ flexShrink: 0 }} />
+          <span>Thank you for choosing <strong style={{ color: C.white }}>CLIKZ Wedding Films</strong> — we're honoured to be part of your story.</span>
         </div>
       </div>
 
@@ -493,7 +494,7 @@ const doc = {
     overflow: 'hidden', fontFamily: "'Inter', system-ui, sans-serif",
     boxSizing: 'border-box', border: '1px solid #f1f5f9',
   },
-  
+
   headerBand: {
     background: '#1e293b',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -510,7 +511,7 @@ const doc = {
   invoiceWord: { fontSize: 12, fontWeight: 700, color: C.gold, letterSpacing: '0.25em', textTransform: 'uppercase', margin: 0 },
   invoiceNum: { fontSize: 26, fontWeight: 800, color: '#ffffff', margin: '4px 0 0', letterSpacing: '-0.02em' },
   invoiceDate: { fontSize: 12, color: '#cbd5e1', margin: '8px 0 0', textAlign: 'right' },
-  
+
   partiesWrap: {
     display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32,
     margin: `24px ${PAGE_PAD}px`,
@@ -532,7 +533,7 @@ const doc = {
   partyName: { fontSize: 15, fontWeight: 700, color: C.ink, margin: '0 0 6px', lineHeight: 1.3, wordBreak: 'break-word' },
   partyLines: { display: 'flex', flexDirection: 'column', gap: 4 },
   partyLine: { display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#4b5563', lineHeight: 1.5, wordBreak: 'break-word' },
-  
+
   tableWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed', boxSizing: 'border-box' },
   th: {
@@ -544,7 +545,7 @@ const doc = {
   },
   td: { padding: '12px 16px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'middle' },
   tdDesc: { padding: '12px 16px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'middle', fontSize: 13, lineHeight: 1.5, color: '#4b5563' },
-  
+
   totalsWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', width: '100%' },
   totalsBox: { pageBreakInside: 'avoid', float: 'right', width: '100%', maxWidth: 340, background: '#f8fafc', borderRadius: 8, padding: '16px 20px', border: `1px solid ${C.border}` },
   totalRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' },
@@ -554,12 +555,12 @@ const doc = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     marginTop: 12, paddingTop: 12, borderTop: `2px solid ${C.border}`,
   },
-  paidFull: { 
+  paidFull: {
     display: 'flex', alignItems: 'center', gap: 6,
     marginTop: 12, paddingTop: 12, borderTop: `2px solid ${C.border}`,
     color: C.greenPaid, fontWeight: 700, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em', justifyContent: 'flex-end'
   },
-  
+
   termsBox: {
     margin: `0 ${PAGE_PAD}px ${SECTION_GAP}px`,
     boxSizing: 'border-box', pageBreakInside: 'avoid'
@@ -575,4 +576,4 @@ const doc = {
     width: '100%',
     boxSizing: 'border-box',
   },
-};
+};
