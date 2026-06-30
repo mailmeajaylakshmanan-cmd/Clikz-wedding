@@ -22,12 +22,12 @@ router.get('/', auth, async (req, res) => {
           }
         },
         { $match: { studioId: req.studioId, isDeleted: false } },
-        { $limit: 50 },
+        { $limit: 10000 },
         { $sort: { name: 1 } }
       ]);
       return res.json(customers);
     }
-    const customers = await secureFind(Customer, {}, req).sort({ name: 1 }).limit(50).lean();
+    const customers = await secureFind(Customer, {}, req).sort({ name: 1 }).lean();
     res.json(customers);
   } catch (err) {
     res.status(500).json({ message: err.message });
