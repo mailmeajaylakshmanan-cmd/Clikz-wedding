@@ -87,7 +87,7 @@ export default function Layout() {
   };
 
   return (
-    <div style={styles.shell}>
+    <div className="print-reset-layout" style={styles.shell}>
 
       {/* ── Mobile Sidebar Backdrop Overlay ── */}
       {isMobile && isMobileSidebarOpen && (
@@ -99,6 +99,7 @@ export default function Layout() {
 
       {/* ── Sidebar ── */}
       <aside
+        className="print-hide"
         style={{
           ...styles.sidebar,
           width: isMobile ? (isMobileSidebarOpen ? 260 : 0) : (isSidebarCollapsed ? 72 : 260),
@@ -209,14 +210,18 @@ export default function Layout() {
       </aside>
 
       {/* ── Main Content Container ── */}
-      <div style={{
+      <div 
+        className="print-reset-layout"
+        style={{
         ...styles.main,
         marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 72 : 260),
         transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
 
         {/* Topbar Header */}
-        <header style={{
+        <header 
+          className="print-hide"
+          style={{
           ...styles.topbar,
           boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.04)' : '0 1px 3px rgba(0,0,0,0.02)',
           padding: isMobile ? '0 16px' : '0 28px',
@@ -254,7 +259,9 @@ export default function Layout() {
         </header>
 
         {/* Content Outlet & Footer */}
-        <div style={{
+        <div 
+          className="print-reset-layout"
+          style={{
           ...styles.content,
           padding: isMobile ? '20px 16px' : '28px 32px',
         }}>
@@ -263,7 +270,7 @@ export default function Layout() {
           </div>
 
           {/* Footer */}
-          <footer style={styles.footer}>
+          <footer className="print-hide" style={styles.footer}>
             <p style={styles.footerTitle}>CLIKZ WEDDING FILMS</p>
 
             <div style={styles.footerSocials}>
