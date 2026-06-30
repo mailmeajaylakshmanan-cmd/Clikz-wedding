@@ -314,7 +314,7 @@ export default function Layout() {
             </div>
 
             <p style={styles.footerCopy}>
-              © {new Date().getFullYear()} CLIKZ Wedding Films
+              © {new Date().getFullYear()} CLIKZ WEDDING FILMS
             </p>
           </footer>
         </div>

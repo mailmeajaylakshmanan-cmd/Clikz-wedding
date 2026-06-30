@@ -129,7 +129,7 @@ export default function InvoiceView() {
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
-          title: `Invoice ${invoice.invoiceNo} — CLIKZ Wedding Films`,
+          title: `Invoice ${invoice.invoiceNo} — CLIKZ WEDDING FILMS`,
           files: [file],
         });
       } else {
@@ -143,11 +143,11 @@ export default function InvoiceView() {
         const payments = buildPayments(invoice);
         const totalPaid = sumPayments(payments) || Number(invoice.advancePaid) || 0;
         const msg = encodeURIComponent(
-          `Hi ${invoice.customer.name}!\n\nPlease find your invoice *${invoice.invoiceNo}* from CLIKZ Wedding Films attached.\n\n` +
+          `Hi ${invoice.customer.name}!\n\nPlease find your invoice *${invoice.invoiceNo}* from CLIKZ WEDDING FILMS attached.\n\n` +
           `Event: ${invoice.event || 'N/A'}\nLocation: ${invoice.location || 'N/A'}\n\n` +
           `Total: ${fmt(invoice.total)}\nPaid: ${fmt(totalPaid)}\n` +
           (invoice.balance > 0 ? `Balance Due: ${fmt(invoice.balance)}\n` : '') +
-          `\nGrateful to be part of your celebration!\nCLIKZ Wedding Films • +91 9994122652`
+          `\nGrateful to be part of your celebration!\nCLIKZ WEDDING FILMS • +91 9994122652`
         );
         window.open('https://wa.me/91' + invoice.customer.phone + '?text=' + msg, '_blank');
       }
@@ -246,7 +246,7 @@ export default function InvoiceView() {
           <div style={doc.logoZone}>
             <img src={clikzLogo} alt="CLIKZ" style={doc.logo} />
             <div>
-              <p style={doc.brandName}>CLIKZ Wedding Films</p>
+              <p style={doc.brandName}>CLIKZ WEDDING FILMS</p>
               <p style={doc.brandTagline}>Turning moments into memories</p>
             </div>
           </div>
@@ -268,7 +268,7 @@ export default function InvoiceView() {
             <p style={doc.sectionLabel}>
               <span>Billed By</span>
             </p>
-            <p style={doc.partyName}>CLIKZ Wedding Films</p>
+            <p style={doc.partyName}>CLIKZ WEDDING FILMS</p>
             <div style={doc.partyLines}>
               <div style={doc.partyLine}>
                 <Phone size={13} color={C.muted} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -433,7 +433,7 @@ export default function InvoiceView() {
         {/* Footer */}
         <div style={doc.footer}>
           <Film size={13} color={C.gold} style={{ flexShrink: 0 }} />
-          <span>Thank you for choosing <strong style={{ color: C.white }}>CLIKZ Wedding Films</strong> — we're honoured to be part of your story.</span>
+          <span>Thank you for choosing <strong style={{ color: C.white }}>CLIKZ WEDDING FILMS</strong> — we're honoured to be part of your story.</span>
         </div>
       </div>
 
