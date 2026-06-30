@@ -11,6 +11,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@tanstack/react-query": "^5.101.0",
     "axios": "^1.7.2",
     "date-fns": "^4.4.0",

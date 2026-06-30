@@ -13,6 +13,7 @@ const navGroups = [
     title: 'Main',
     items: [
       { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+      { to: '/operations', label: 'Operations', icon: Sparkles },
     ]
   },
   {

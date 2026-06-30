@@ -64,6 +64,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/employees', require('./routes/employees'));
 app.use('/api/dispatch', require('./routes/dispatch'));
 app.use('/api/media', require('./routes/media'));
+app.use('/api/operations', require('./routes/operations'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', app: 'CLIKZ Billing' }));
