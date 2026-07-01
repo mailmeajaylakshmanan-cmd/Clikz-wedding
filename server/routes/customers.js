@@ -8,10 +8,12 @@ const { secureFind, secureFindOne } = require('../utils/queryHelper');
 router.get('/', auth, async (req, res) => {
   try {
     const { search } = req.query;
+    let customers;
+
     if (search) {
       // High-performance Atlas Search (Requires Search Index to be built manually in MongoDB Atlas)
       // Fallback to normal query if we just want basic regex before index builds:
-      const customers = await Customer.aggregate([
+      customers = await Customer.aggregate([
         {
           $search: {
             index: "default", // Name of the Atlas Search Index
@@ -25,9 +27,29 @@ router.get('/', auth, async (req, res) => {
         { $limit: 10000 },
         { $sort: { name: 1 } }
       ]);
-      return res.json(customers);
+    } else {
+      customers = await secureFind(Customer, {}, req).sort({ name: 1 }).lean();
     }
-    const customers = await secureFind(Customer, {}, req).sort({ name: 1 }).lean();
+
+    // Dynamically calculate bookings based on invoices
+    const Invoice = require('../models/Invoice');
+    const phones = customers.map(c => c.phone);
+    
+    const invoiceCounts = await Invoice.aggregate([
+      { $match: { 'customer.phone': { $in: phones }, studioId: req.studioId, isDeleted: false } },
+      { $group: { _id: '$customer.phone', count: { $sum: 1 } } }
+    ]);
+
+    const countMap = {};
+    invoiceCounts.forEach(item => {
+      countMap[item._id] = item.count;
+    });
+
+    customers = customers.map(c => ({
+      ...c,
+      totalInvoices: countMap[c.phone] || 0
+    }));
+
     res.json(customers);
   } catch (err) {
     res.status(500).json({ message: err.message });

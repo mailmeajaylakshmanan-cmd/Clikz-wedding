@@ -1,9 +1,25 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
-import { Plus, Edit3, Trash2, X } from 'lucide-react';
+import { 
+  Plus, Edit3, X, Search, ChevronDown, ChevronUp, 
+  Heart, Cake, Briefcase, Camera, Calendar, Star, Users, Folder, Video
+} from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Select from 'react-select';
+
+// Helper to get category icon
+const getCategoryIcon = (name) => {
+  const n = name.toLowerCase();
+  if (n.includes('wedding')) return <Camera size={20} className="text-orange-500" />;
+  if (n.includes('birthday')) return <Cake size={20} className="text-orange-500" />;
+  if (n.includes('corporate') || n.includes('business')) return <Briefcase size={20} className="text-orange-500" />;
+  if (n.includes('engagement') || n.includes('anniversary')) return <Heart size={20} className="text-orange-500" />;
+  if (n.includes('event')) return <Calendar size={20} className="text-orange-500" />;
+  if (n.includes('pre-wedding') || n.includes('couple')) return <Users size={20} className="text-orange-500" />;
+  if (n.includes('video') || n.includes('film')) return <Video size={20} className="text-orange-500" />;
+  return <Star size={20} className="text-orange-500" />;
+};
 
 export default function MasterService() {
   const queryClient = useQueryClient();
@@ -26,11 +42,54 @@ export default function MasterService() {
   const services = data?.services || [];
   const categories = data?.categories || [];
   
+  // UI State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
+
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [descriptionsStr, setDescriptionsStr] = useState('');
   const [editId, setEditId] = useState(null);
+
+  const toggleCategory = (categoryId) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
+
+  const filteredCategories = useMemo(() => {
+    let filtered = categories;
+    if (filterCategory) {
+      filtered = filtered.filter(cat => cat._id === filterCategory);
+    }
+    
+    return filtered.map(cat => {
+      let catServices = services.filter(s => s.category?._id === cat._id);
+      
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        catServices = catServices.filter(s => 
+          s.name.toLowerCase().includes(q) || 
+          (s.descriptions && s.descriptions.some(d => d.toLowerCase().includes(q)))
+        );
+      }
+      
+      return {
+        ...cat,
+        services: catServices
+      };
+    }).filter(cat => cat.services.length > 0 || !searchQuery); // if searching, hide empty categories
+  }, [categories, services, filterCategory, searchQuery]);
+
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -98,127 +157,162 @@ export default function MasterService() {
     }
   }
 
-  // Group services by category
-  const servicesByCategory = categories.map(cat => ({
-    category: cat,
-    services: services.filter(s => s.category?._id === cat._id)
-  }));
-
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <header className="flex flex-col md:flex-row justify-between md:items-end mb-8">
+      <header className="flex flex-col md:flex-row justify-between md:items-start mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Master Service</h1>
-          <p className="text-slate-500 mt-1">Manage studio service catalogs organized by event category</p>
+          <h1 className="text-3xl font-extrabold text-[#1A202C] tracking-tight">Master Service Management</h1>
+          <p className="text-slate-500 mt-1">Organize and edit all studio services with a smooth accordion interface.</p>
         </div>
         <button 
           onClick={() => handleAdd()} 
-          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-200 mt-4 md:mt-0"
+          className="flex items-center justify-center gap-2 bg-[#FF7A00] hover:bg-[#e66e00] text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-500/30 whitespace-nowrap"
         >
           <Plus size={20} />
           <span>Add Service</span>
         </button>
       </header>
 
-      {/* Categories Cards */}
+      {/* Top Search & Filter Bar */}
+      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search services by name or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-all text-slate-700"
+          />
+        </div>
+        <div className="w-full md:w-64">
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-all text-slate-700 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
+          >
+            <option value="">Filter by Category</option>
+            {categories.map(cat => (
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Accordion Categories */}
       {loading ? (
         <div className="text-center py-12 text-slate-400">Loading services...</div>
-      ) : categories.length === 0 ? (
-        <div className="text-center py-12 text-slate-400">No event categories found. Please create categories first.</div>
+      ) : filteredCategories.length === 0 ? (
+        <div className="text-center py-12 text-slate-400 bg-white rounded-2xl border border-slate-200 shadow-sm">
+          No services or categories found matching your criteria.
+        </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {servicesByCategory.map((group) => (
-            <div key={group.category._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-              <div className="bg-slate-50/80 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-                <h2 className="text-lg font-bold text-slate-800 uppercase tracking-tight">{group.category.name}</h2>
+        <div className="space-y-4">
+          {filteredCategories.map((cat) => {
+            const isExpanded = expandedCategories.has(cat._id);
+            return (
+              <div key={cat._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300">
+                {/* Accordion Header */}
                 <button
-                  onClick={() => handleAdd(group.category)}
-                  className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors"
+                  onClick={() => toggleCategory(cat._id)}
+                  className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors focus:outline-none group"
                 >
-                  <Plus size={14} /> Add
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center transition-transform group-hover:scale-105">
+                      {getCategoryIcon(cat.name)}
+                    </div>
+                    <h2 className="text-lg font-bold text-[#1A202C]">{cat.name}</h2>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full whitespace-nowrap">
+                      {cat.services.filter(s => s.isActive !== false).length} Services Active
+                    </span>
+                    {isExpanded ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+                  </div>
                 </button>
-              </div>
-              <div className="flex-1 overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="px-6 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">Service Name</th>
-                      <th className="px-6 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">Descriptions</th>
-                      <th className="px-6 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right bg-white">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {group.services.length === 0 ? (
-                      <tr>
-                        <td colSpan="3" className="text-center py-8 text-slate-400 text-sm">
-                          No services for this category
-                        </td>
-                      </tr>
+
+                {/* Accordion Body */}
+                {isExpanded && (
+                  <div className="border-t border-slate-100 bg-slate-50/30">
+                    {cat.services.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-slate-400">
+                        No services in this category.
+                        <button onClick={(e) => { e.stopPropagation(); handleAdd(cat); }} className="text-[#FF7A00] font-medium ml-2 hover:underline">Add one now</button>
+                      </div>
                     ) : (
-                      group.services.map(srv => (
-                        <tr key={srv._id} className="hover:bg-slate-50/50 transition-colors group/row">
-                          <td className="px-6 py-4 font-semibold text-slate-800 text-sm align-top">{srv.name}</td>
-                          <td className="px-6 py-4 text-slate-600 align-top">
-                            {srv.descriptions && srv.descriptions.length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                {srv.descriptions.map((d, i) => (
-                                  <span key={i} className="inline-block bg-slate-50 text-slate-600 border border-slate-100 px-2 py-0.5 rounded text-[11px] font-medium">
-                                    {d}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : '—'}
-                          </td>
-                          <td className="px-6 py-4 text-right align-top">
-                            <div className="flex justify-end gap-2">
+                      <div className="flex flex-col">
+                        {cat.services.map((srv, idx) => (
+                          <div 
+                            key={srv._id} 
+                            className={`flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors ${idx !== cat.services.length - 1 ? 'border-b border-slate-100' : ''}`}
+                          >
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                              <span className="font-bold text-[#1A202C] text-[15px]">{srv.name}</span>
+                              <span className="text-sm text-slate-400 truncate pr-4">
+                                {srv.descriptions && srv.descriptions.length > 0 
+                                  ? srv.descriptions.join(', ')
+                                  : 'No description available'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4 shrink-0">
                               <button
-                                onClick={() => handleEdit(srv)}
-                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                                title="Edit"
+                                onClick={(e) => { e.stopPropagation(); handleEdit(srv); }}
+                                className="p-2 text-slate-400 hover:text-[#1A202C] hover:bg-slate-200 rounded-xl transition-all"
+                                title="Quick-Edit"
                               >
-                                <Edit3 size={15} />
+                                <Edit3 size={18} strokeWidth={2.5} />
                               </button>
+                              
+                              {/* iOS Style Toggle Switch */}
                               <button
-                                onClick={() => handleStatusChange(srv._id, srv.isActive === false ? 'Active' : 'Inactive')}
-                                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                  srv.isActive !== false ? 'bg-emerald-500' : 'bg-slate-300'
+                                onClick={(e) => { e.stopPropagation(); handleStatusChange(srv._id, srv.isActive === false ? 'Active' : 'Inactive'); }}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none ${
+                                  srv.isActive !== false ? 'bg-[#FF7A00]' : 'bg-slate-300'
                                 }`}
                                 title={srv.isActive !== false ? 'Active' : 'Inactive'}
                               >
-                                <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                  srv.isActive !== false ? 'translate-x-4' : 'translate-x-0'
+                                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out ${
+                                  srv.isActive !== false ? 'translate-x-2.5' : '-translate-x-2.5'
                                 }`} />
                               </button>
                             </div>
-                          </td>
-                        </tr>
-                      ))
+                          </div>
+                        ))}
+                      </div>
                     )}
-                  </tbody>
-                </table>
+                    <div className="px-6 py-3 border-t border-slate-100 bg-white">
+                       <button
+                          onClick={(e) => { e.stopPropagation(); handleAdd(cat); }}
+                          className="text-xs font-bold text-[#FF7A00] hover:text-[#e66e00] flex items-center gap-1 transition-colors"
+                        >
+                          <Plus size={14} strokeWidth={3} /> ADD MORE
+                        </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-800">{editId ? 'Edit Service' : 'Add Service'}</h2>
-              <button onClick={handleCancelEdit} className="text-slate-400 hover:text-slate-600 transition-colors">
-                <X size={20} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1A202C]/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+              <h2 className="text-xl font-extrabold text-[#1A202C]">{editId ? 'Edit Service' : 'Add Service'}</h2>
+              <button onClick={handleCancelEdit} className="text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-colors">
+                <X size={18} strokeWidth={2.5} />
               </button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Service Name *</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Service Name *</label>
                   <input
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white text-slate-700 font-medium"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-slate-50 hover:bg-white transition-colors text-[#1A202C] font-semibold"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="e.g. Cinematic Film"
@@ -228,42 +322,56 @@ export default function MasterService() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Event Category *</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Event Category *</label>
                   <Select
                     options={categories.map(cat => ({ value: cat._id, label: cat.name }))}
                     value={selectedCategory}
                     onChange={setSelectedCategory}
                     placeholder="Select event category..."
-                    className="text-sm text-slate-700"
+                    className="text-sm font-medium text-[#1A202C]"
                     isClearable
+                    styles={{
+                      control: (base, state) => ({
+                        ...base,
+                        borderRadius: '0.75rem',
+                        padding: '2px',
+                        borderColor: state.isFocused ? '#fb923c' : '#e2e8f0',
+                        backgroundColor: '#f8fafc',
+                        boxShadow: state.isFocused ? '0 0 0 2px #fb923c' : 'none',
+                        '&:hover': {
+                          borderColor: state.isFocused ? '#fb923c' : '#cbd5e1',
+                          backgroundColor: '#ffffff'
+                        }
+                      })
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sub-service Options (One per line)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sub-service Options (One per line)</label>
                   <textarea
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white text-slate-700 font-medium resize-none"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-slate-50 hover:bg-white transition-colors text-[#1A202C] font-medium resize-none"
                     rows="4"
                     value={descriptionsStr}
                     onChange={e => setDescriptionsStr(e.target.value)}
-                    placeholder="E.g. Traditional Coverage\nCandid Coverage\nHighlight Film"
+                    placeholder="E.g. Traditional Coverage&#10;Candid Coverage&#10;Highlight Film"
                   ></textarea>
                 </div>
               </div>
               
-              <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex gap-3 justify-end">
+              <div className="bg-slate-50/50 px-6 py-5 border-t border-slate-100 flex gap-3 justify-end">
                 <button 
                   type="button" 
                   onClick={handleCancelEdit} 
-                  className="bg-white hover:bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg border border-slate-200 transition-colors text-xs"
+                  className="bg-white hover:bg-slate-100 text-[#1A202C] font-bold px-5 py-2.5 rounded-xl border border-slate-200 transition-colors text-sm"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg transition-all shadow-sm text-xs"
+                  className="bg-[#FF7A00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-md shadow-orange-500/20 text-sm"
                 >
-                  {editId ? 'Update' : 'Save'}
+                  {editId ? 'Save Changes' : 'Create Service'}
                 </button>
               </div>
             </form>

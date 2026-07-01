@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import { Plus, Search, Eye, Edit3, Trash2, X, FileText } from 'lucide-react';
@@ -30,8 +30,14 @@ function formatDate(dateStr) {
 
 export default function InvoiceList() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const [status, setStatus] = useState('All Statuses');
+  
+  React.useEffect(() => {
+    const s = searchParams.get('search');
+    if (s !== null && s !== search) setSearch(s);
+  }, [searchParams]);
   
   // Payment modal state
   const [selectedPaymentInvoiceId, setSelectedPaymentInvoiceId] = useState(null);

@@ -31,8 +31,8 @@ export default function Dashboard() {
         location: inv.location || 'TBD',
         role: inv.staffAllocated?.map(s => s.role).join(', ') || 'Staffing pending',
         status: inv.staffingStatus || 'Staffing Pending',
-        day: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).getDate() : Math.floor(Math.random() * 28) + 1
-      })) || [];
+        day: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).getDate() : null
+      })).filter(s => s.day !== null) || [];
 
       return {
         netProfit: res.data.totalReceived || 0,
@@ -205,39 +205,38 @@ export default function Dashboard() {
             const items = data.pipeline.filter(p => p.stage === stage);
             const getStageColors = (s) => {
               switch(s) {
-                case 'Enquiry': return 'bg-amber-50/50 border-amber-100 text-amber-700 decoration-amber-300';
-                case 'In Progress': return 'bg-indigo-50/50 border-indigo-100 text-indigo-700 decoration-indigo-300';
-                case 'Completed': return 'bg-emerald-50/50 border-emerald-100 text-emerald-700 decoration-emerald-300';
-                default: return 'bg-slate-50 border-slate-100 text-slate-600 decoration-slate-300';
+                case 'Enquiry': return 'bg-amber-50/40 border-amber-100 text-amber-700';
+                case 'In Progress': return 'bg-indigo-50/40 border-indigo-100 text-indigo-700';
+                case 'Completed': return 'bg-emerald-50/40 border-emerald-100 text-emerald-700';
+                default: return 'bg-slate-50 border-slate-100 text-slate-600';
               }
             };
             const colors = getStageColors(stage);
 
             return (
-              <div key={stage} className={`border rounded-xl p-4 flex flex-col justify-between ${colors}`}>
-                <div>
-                  <div className="flex items-center justify-between border-b border-inherit pb-2 mb-3">
-                    <span className="text-xs font-bold uppercase tracking-wider">{stage}</span>
-                    <span className="text-[11px] font-bold bg-white/60 px-2 py-0.5 rounded-full shadow-sm">{items.length}</span>
-                  </div>
-                  <div className="space-y-3">
-                    {items.map(item => (
-                      <div key={item.id} className="bg-white rounded-lg p-3 shadow-sm border border-white hover:border-inherit transition-all hover:shadow-md cursor-pointer relative overflow-hidden group">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent to-transparent group-hover:from-inherit group-hover:to-inherit opacity-50"></div>
-                        <p className="text-sm font-bold text-slate-800 truncate">{item.client}</p>
-                        <p className="text-[11px] text-slate-500 font-medium mt-0.5 truncate">{item.service}</p>
-                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-50">
-                          <span className="text-[10px] font-semibold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">{item.date}</span>
-                          <span className="text-[11px] font-extrabold text-slate-700">₹{item.value.toLocaleString('en-IN')}</span>
-                        </div>
+              <div key={stage} className={`border rounded-xl p-3 flex flex-col justify-start ${colors}`}>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <span className="text-xs font-bold uppercase tracking-wider">{stage}</span>
+                  <span className="text-[10px] font-bold bg-white/80 px-2 py-0.5 rounded-full shadow-sm">{items.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {items.map(item => (
+                    <div key={item.id} className="bg-white rounded-lg p-2.5 shadow-sm border border-white hover:border-inherit transition-all hover:shadow-md cursor-pointer flex flex-col gap-1">
+                      <div className="flex justify-between items-start">
+                        <p className="text-xs font-bold text-slate-800 truncate pr-2">{item.client}</p>
+                        <span className="text-[10px] font-extrabold text-slate-700 shrink-0">₹{item.value.toLocaleString('en-IN')}</span>
                       </div>
-                    ))}
-                    {items.length === 0 && (
-                      <div className="border-2 border-dashed border-inherit/30 rounded-lg py-6 flex items-center justify-center">
-                        <p className="text-xs font-medium opacity-60">Empty stage</p>
+                      <div className="flex justify-between items-center text-[10px]">
+                        <p className="text-slate-500 font-medium truncate pr-2">{item.service}</p>
+                        <span className="font-semibold text-slate-400 bg-slate-50/80 px-1.5 rounded shrink-0">{item.date}</span>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
+                  {items.length === 0 && (
+                    <div className="border border-dashed border-inherit/40 rounded-lg py-4 flex items-center justify-center bg-white/40">
+                      <p className="text-[10px] font-medium opacity-50">No items</p>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -267,7 +266,7 @@ export default function Dashboard() {
               ))}
               {Array.from({ length: 30 }, (_, i) => {
                 const day = i + 1;
-                const dayEvents = data.weeklySchedule.filter(s => s.day === day || (!s.day && [15, 18, 22].includes(day)));
+                const dayEvents = data.weeklySchedule.filter(s => s.day === day);
                 const hasEvent = dayEvents.length > 0;
                 
                 return (

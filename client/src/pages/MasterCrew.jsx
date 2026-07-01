@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
-import { Plus, Edit3, Trash2, X } from 'lucide-react';
+import { Plus, Edit3, X, Search, User } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function MasterCrew() {
@@ -19,8 +19,8 @@ export default function MasterCrew() {
   const [contact, setContact] = useState('');
   const [status, setStatus] = useState('Active');
   const [editId, setEditId] = useState(null);
-
-
+  
+  const [searchQuery, setSearchQuery] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -81,118 +81,137 @@ export default function MasterCrew() {
     }
   }
 
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(c => 
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.contact && c.contact.includes(searchQuery)) ||
+      (c.phone && c.phone.includes(searchQuery))
+    );
+  }, [employees, searchQuery]);
+
+  // Helper for random color and initials
+  const getAvatarInfo = (nameStr, id) => {
+    const initials = nameStr.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const colors = ['bg-slate-100', 'bg-orange-50', 'bg-emerald-50', 'bg-blue-50', 'bg-purple-50', 'bg-rose-50'];
+    const colorIndex = (id.charCodeAt(id.length - 1) || 0) % colors.length;
+    return { initials, bgClass: colors[colorIndex] };
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1400px] mx-auto pb-20 font-sans">
+      
       {/* Header Section */}
-      <header className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-8">
+      <header className="flex flex-col md:flex-row justify-between md:items-start mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Crew Master</h1>
-          <p className="text-slate-500 mt-1">Review studio crew rosters and operational statuses</p>
+          <h1 className="text-3xl font-extrabold text-[#1A202C] tracking-tight">Crew Master Management</h1>
+          <p className="text-slate-500 mt-1">Review studio crew rosters and operational statuses.</p>
         </div>
         <button 
-          onClick={handleAdd} 
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-200"
+          onClick={() => handleAdd()} 
+          className="flex items-center justify-center gap-2 bg-[#FF7A00] hover:bg-[#e66e00] text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-500/30 whitespace-nowrap"
         >
           <Plus size={20} />
           <span>Add Crew Member</span>
         </button>
       </header>
 
-      {/* Table Container */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-slate-50/80 border-b border-slate-200">
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Name</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Role</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Phone / Contact</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loading && (
-              <tr>
-                <td colSpan="5" className="text-center py-12 text-slate-400 text-sm">
-                  Loading crew members...
-                </td>
-              </tr>
-            )}
-            {!loading && employees.length === 0 && (
-              <tr>
-                <td colSpan="5" className="text-center py-12 text-slate-400 text-sm">
-                  No crew members registered
-                </td>
-              </tr>
-            )}
-            {employees.map(member => (
-              <tr key={member._id} className="hover:bg-slate-50/50 transition-colors group">
-                <td className="px-6 py-4.5 font-semibold text-slate-800 text-sm">{member.name}</td>
-                <td className="px-6 py-4.5 text-slate-600">
-                  <span className="inline-block bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded text-[11px] font-medium border border-slate-200">
-                    {member.role}
-                  </span>
-                </td>
-                <td className="px-6 py-4.5 text-slate-600 font-medium text-sm">
-                  {member.contact || member.phone || '—'}
-                </td>
-                <td className="px-6 py-4.5 text-center">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tight ${
-                    member.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
-                    member.status === 'On Leave' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 
-                    'bg-slate-100 text-slate-500 border border-slate-200'
-                  }`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${
-                      member.status === 'Active' ? 'bg-emerald-500' : 
-                      member.status === 'On Leave' ? 'bg-amber-500' : 'bg-slate-400'
-                    }`}></span>
-                    {member.status || 'Active'}
-                  </span>
-                </td>
-                <td className="px-6 py-4.5 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => handleEdit(member)}
-                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                      title="Edit"
-                    >
-                      <Edit3 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(member._id, member.isActive === false ? 'Active' : 'Inactive')}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        member.isActive !== false ? 'bg-emerald-500' : 'bg-slate-300'
-                      }`}
-                      title={member.isActive !== false ? 'Active' : 'Inactive'}
-                    >
-                      <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        member.isActive !== false ? 'translate-x-4' : 'translate-x-0'
-                      }`} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Top Search & Filter Bar */}
+      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-6">
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search crew by name, role or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-all text-slate-700"
+          />
+        </div>
+      </div>
+
+      {/* Floating Cards List */}
+      <div className="space-y-3 relative">
+        {loading && <div className="text-center py-10 text-slate-400">Loading crew members...</div>}
+        
+        {!loading && filteredEmployees.length === 0 && (
+          <div className="text-center py-10 text-slate-400">No crew members found matching your search.</div>
+        )}
+
+        {filteredEmployees.map(member => {
+          const { initials, bgClass } = getAvatarInfo(member.name, member._id);
+          const active = member.isActive !== false;
+          
+          return (
+            <div key={member._id} className="bg-white rounded-[20px] shadow-sm border border-slate-100 p-3 pr-6 flex flex-col md:flex-row items-center justify-between gap-4 hover:shadow-md transition-all duration-200 group">
+              
+              {/* Name & Role Column */}
+              <div className="flex items-center gap-4 w-full md:w-[35%] shrink-0 pl-2">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-slate-700 text-lg shrink-0 ${bgClass}`}>
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-slate-900 text-[15px] truncate">{member.name}</div>
+                  <div className="text-[12px] font-bold text-slate-500 uppercase mt-0.5">{member.role}</div>
+                </div>
+              </div>
+
+              {/* Contact Column */}
+              <div className="w-full md:w-[20%] flex flex-col shrink-0">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Contact</div>
+                <div className="text-slate-700 font-medium text-[14px] mt-0.5">{member.contact || member.phone || '—'}</div>
+              </div>
+
+              {/* Status Tag Column */}
+              <div className="w-full md:w-[20%] flex items-center shrink-0">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-tight ${
+                  member.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                  member.status === 'On Leave' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 
+                  'bg-slate-100 text-slate-500 border border-slate-200'
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${
+                    member.status === 'Active' ? 'bg-emerald-500' : 
+                    member.status === 'On Leave' ? 'bg-amber-500' : 'bg-slate-400'
+                  }`}></span>
+                  {member.status || 'Active'}
+                </span>
+              </div>
+
+              {/* Actions Column */}
+              <div className="w-full md:flex-1 flex items-center justify-end gap-4 shrink-0">
+                <button onClick={() => handleEdit(member)} className="text-slate-400 hover:text-slate-700 transition-colors focus:outline-none">
+                  <Edit3 size={18} />
+                </button>
+                
+                {/* iOS Toggle */}
+                <button
+                  onClick={() => handleStatusChange(member._id, active ? 'Inactive' : 'Active')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0 ${active ? 'bg-orange-400' : 'bg-slate-200'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${active ? 'translate-x-[22px]' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-800">{editId ? 'Edit Crew Member' : 'Add Crew Member'}</h2>
-              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 transition-colors">
-                <X size={20} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800">{editId ? 'Edit Crew Member' : 'Add Crew Member'}</h2>
+              <button onClick={handleCloseModal} className="text-slate-400 hover:text-slate-600 transition-colors bg-slate-100 hover:bg-slate-200 p-1.5 rounded-full">
+                <X size={18} />
               </button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-5">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Name *</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 pl-1">Name *</label>
                   <input
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white text-slate-700 font-medium"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-slate-50 focus:bg-white text-slate-800 font-semibold transition-all"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="e.g. Kishore Ramachandran"
@@ -202,9 +221,9 @@ export default function MasterCrew() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Role *</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 pl-1">Role *</label>
                   <select
-                    className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent text-slate-700 font-medium"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-slate-50 focus:bg-white text-slate-800 font-semibold transition-all"
                     value={role}
                     onChange={e => setRole(e.target.value)}
                     required
@@ -219,9 +238,9 @@ export default function MasterCrew() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Phone / Contact</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 pl-1">Phone / Contact</label>
                   <input
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white text-slate-700 font-medium"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-slate-50 focus:bg-white text-slate-800 font-semibold transition-all"
                     value={contact}
                     onChange={e => setContact(e.target.value)}
                     placeholder="Phone Number (optional)"
@@ -229,9 +248,9 @@ export default function MasterCrew() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status *</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 pl-1">Status *</label>
                   <select
-                    className="w-full border border-slate-200 rounded-lg p-2.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent text-slate-700 font-medium"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-slate-50 focus:bg-white text-slate-800 font-semibold transition-all"
                     value={status}
                     onChange={e => setStatus(e.target.value)}
                     required
@@ -243,19 +262,19 @@ export default function MasterCrew() {
                 </div>
               </div>
               
-              <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex gap-3 justify-end">
+              <div className="px-6 py-5 border-t border-slate-100 flex gap-3 justify-end bg-slate-50/50">
                 <button 
                   type="button" 
                   onClick={handleCloseModal} 
-                  className="bg-white hover:bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg border border-slate-200 transition-colors text-xs"
+                  className="bg-white hover:bg-slate-100 text-slate-600 font-bold px-6 py-2.5 rounded-xl border border-slate-200 transition-colors text-sm"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg transition-all shadow-sm text-xs"
+                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-2.5 rounded-xl transition-all shadow-md shadow-orange-200 text-sm"
                 >
-                  {editId ? 'Update' : 'Save'}
+                  {editId ? 'Update Crew' : 'Save Crew'}
                 </button>
               </div>
             </form>

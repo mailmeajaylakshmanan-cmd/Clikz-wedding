@@ -80,6 +80,7 @@ export default function Layout() {
   };
 
   const getPageTitle = () => {
+    if (location.pathname === '/invoices/new') return 'New Invoice';
     const allItems = navGroups.flatMap(g => g.items);
     const item = allItems.find(i =>
       i.end ? location.pathname === i.to : location.pathname.startsWith(i.to)
@@ -244,7 +245,7 @@ export default function Layout() {
             )}
             <div>
               <span style={styles.pageTitle}>{getPageTitle()}</span>
-              {!isMobile && <span style={styles.pageSubtitle}>Welcome back, Admin</span>}
+              {!isMobile && <span style={styles.pageSubtitle}>{location.pathname === '/invoices/new' ? 'Create a new combined invoice' : 'Welcome back, Admin'}</span>}
             </div>
           </div>
 

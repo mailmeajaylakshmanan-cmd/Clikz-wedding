@@ -38,11 +38,6 @@ export default function NewInvoice() {
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6">
-        <Link to="/invoices" className="text-gray-400 hover:text-gray-600 text-sm">← Invoices</Link>
-        <span className="text-gray-300">/</span>
-        <h1 className="text-xl font-semibold text-gray-900">New Invoice</h1>
-      </div>
 
       {existingInvoice && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-6 flex justify-between items-center">
