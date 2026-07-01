@@ -325,7 +325,7 @@ const doc = {
   headerBand: {
     background: '#1e293b',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: \`24px \${PAGE_PAD}px\`, width: '100%', boxSizing: 'border-box',
+    padding: `24px ${PAGE_PAD}px`, width: '100%', boxSizing: 'border-box',
     borderBottom: '1px solid #0f172a',
   },
   logoZone: { display: 'flex', alignItems: 'center', gap: 16 },
@@ -337,12 +337,12 @@ const doc = {
   invoiceNum: { fontSize: 26, fontWeight: 800, color: '#ffffff', margin: '4px 0 0', letterSpacing: '-0.02em' },
   partiesWrap: {
     display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32,
-    margin: \`24px \${PAGE_PAD}px\`, boxSizing: 'border-box',
+    margin: `24px ${PAGE_PAD}px`, boxSizing: 'border-box',
   },
   partyCard: { boxSizing: 'border-box', minWidth: 0 },
   sectionLabel: {
     fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: '0.15em', textTransform: 'uppercase', margin: '0 0 8px',
-    borderBottom: \`1px solid \${C.border}\`, paddingBottom: 6,
+    borderBottom: `1px solid ${C.border}`, paddingBottom: 6,
   },
   sectionHeading: {
     fontSize: 13, fontWeight: 700, color: C.ink, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 16,
@@ -350,19 +350,19 @@ const doc = {
   partyName: { fontSize: 15, fontWeight: 700, color: C.ink, margin: '0 0 6px', lineHeight: 1.3, wordBreak: 'break-word' },
   partyLines: { display: 'flex', flexDirection: 'column', gap: 4 },
   partyLine: { display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#4b5563', lineHeight: 1.5, wordBreak: 'break-word' },
-  tableWrap: { padding: \`0 \${PAGE_PAD}px\`, marginBottom: SECTION_GAP, boxSizing: 'border-box', overflowX: 'auto' },
+  tableWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed', boxSizing: 'border-box' },
   th: {
     background: '#f8fafc', color: '#475569', padding: '12px 16px', fontSize: 11,
-    fontWeight: 700, letterSpacing: '0.05em', borderTop: \`1px solid \${C.border}\`, borderBottom: \`1px solid \${C.border}\`,
+    fontWeight: 700, letterSpacing: '0.05em', borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`,
     textTransform: 'uppercase',
   },
-  td: { padding: '12px 16px', borderBottom: \`1px solid \${C.border}\`, verticalAlign: 'middle' },
-  tdDesc: { padding: '12px 16px', borderBottom: \`1px solid \${C.border}\`, verticalAlign: 'middle', fontSize: 13, lineHeight: 1.5, color: '#4b5563' },
+  td: { padding: '12px 16px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'middle' },
+  tdDesc: { padding: '12px 16px', borderBottom: `1px solid ${C.border}`, verticalAlign: 'middle', fontSize: 13, lineHeight: 1.5, color: '#4b5563' },
   footer: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    background: '#f8fafc', borderTop: \`1px solid \${C.border}\`,
-    padding: \`28px \${PAGE_PAD}px\`, fontSize: 12, color: '#64748b', textAlign: 'center',
+    background: '#f8fafc', borderTop: `1px solid ${C.border}`,
+    padding: `28px ${PAGE_PAD}px`, fontSize: 12, color: '#64748b', textAlign: 'center',
     width: '100%', boxSizing: 'border-box',
   },
 };
