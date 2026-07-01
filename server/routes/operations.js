@@ -66,6 +66,19 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// GET single operation by invoiceId
+router.get('/:invoiceId', auth, async (req, res) => {
+  try {
+    let op = await secureFindOne(Operations, { invoice: req.params.invoiceId }, req);
+    if (!op) {
+      return res.status(404).json({ message: 'Operation not found for this invoice' });
+    }
+    res.json(op);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // PATCH update operation field (stage or checklist item)
 router.patch('/:invoiceId', auth, async (req, res) => {
   try {

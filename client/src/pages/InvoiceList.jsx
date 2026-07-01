@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
-import { Plus, Search, Eye, Edit3, Trash2, X } from 'lucide-react';
+import { Plus, Search, Eye, Edit3, Trash2, X, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 function fmt(n) {
@@ -222,6 +222,7 @@ export default function InvoiceList() {
                   
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
+                      <Link to={`/invoices/${inv._id}/report`} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg" title="Booking Report"><FileText size={16}/></Link>
                       <Link to={`/invoices/${inv._id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="View Details"><Eye size={16}/></Link>
                       <Link to={`/invoices/${inv._id}/edit`} className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg" title="Edit"><Edit3 size={16}/></Link>
                     </div>
