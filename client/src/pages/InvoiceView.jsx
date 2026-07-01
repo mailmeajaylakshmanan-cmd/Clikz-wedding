@@ -254,10 +254,10 @@ export default function InvoiceView() {
             <p style={doc.invoiceWord}>INVOICE</p>
             <p style={doc.invoiceNum}>{invoice.invoiceNo}</p>
             {date && (
-              <p style={doc.invoiceDate}>
-                <Calendar size={11} style={iconStyle} />
-                <span style={{ verticalAlign: 'middle' }}>{date}</span>
-              </p>
+              <div style={doc.invoiceDate}>
+                <Calendar size={12} />
+                <span>{date}</span>
+              </div>
             )}
           </div>
         </div>
@@ -271,15 +271,15 @@ export default function InvoiceView() {
             <p style={doc.partyName}>CLIKZ WEDDING FILMS</p>
             <div style={doc.partyLines}>
               <div style={doc.partyLine}>
-                <Phone size={13} color={C.muted} style={{ marginTop: 2, flexShrink: 0 }} />
+                <Phone size={13} color={C.muted} style={{ flexShrink: 0 }} />
                 <span>+91 9994122652</span>
               </div>
               <div style={doc.partyLine}>
-                <Mail size={13} color={C.muted} style={{ marginTop: 2, flexShrink: 0 }} />
+                <Mail size={13} color={C.muted} style={{ flexShrink: 0 }} />
                 <span>clikzweddingfilms@gmail.com</span>
               </div>
               <div style={doc.partyLine}>
-                <AtSign size={13} color={C.muted} style={{ marginTop: 2, flexShrink: 0 }} />
+                <AtSign size={13} color={C.muted} style={{ flexShrink: 0 }} />
                 <span>clikz_.photography</span>
               </div>
             </div>
@@ -291,21 +291,27 @@ export default function InvoiceView() {
             <p style={doc.partyName}>{invoice.customer.name}</p>
             <div style={doc.partyLines}>
               <div style={doc.partyLine}>
-                <Phone size={13} color={C.muted} style={{ marginTop: 2, flexShrink: 0 }} />
+                <Phone size={13} color={C.muted} style={{ flexShrink: 0 }} />
                 <span>{invoice.customer.phone}</span>
               </div>
               {categoryName && (
-                <div style={doc.partyLine}>{categoryName}{invoice.event ? ' · ' + invoice.event : ''}</div>
+                <div style={doc.partyLine}>
+                  <Film size={13} color={C.muted} style={{ flexShrink: 0 }} />
+                  <span>
+                    {categoryName}
+                    {invoice.event && invoice.event.trim().toLowerCase() !== categoryName.trim().toLowerCase() ? ' · ' + invoice.event : ''}
+                  </span>
+                </div>
               )}
               {eventDate && (
                 <div style={doc.partyLine}>
-                  <Calendar size={13} color={C.muted} style={{ marginTop: 2, flexShrink: 0 }} />
+                  <Calendar size={13} color={C.muted} style={{ flexShrink: 0 }} />
                   <span>{eventDate}</span>
                 </div>
               )}
               {invoice.location && (
                 <div style={doc.partyLine}>
-                  <MapPin size={13} color={C.muted} style={{ marginTop: 2, flexShrink: 0 }} />
+                  <MapPin size={13} color={C.muted} style={{ flexShrink: 0 }} />
                   <span>{invoice.location}</span>
                 </div>
               )}
@@ -331,8 +337,8 @@ export default function InvoiceView() {
               {invoice.services.map((s, i) => (
                 <tr key={i} style={{ background: C.white }}>
                   <td style={{ ...doc.td, fontWeight: 600, color: C.ink }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      <Camera size={13} color={C.muted} style={{ marginTop: 2, flexShrink: 0 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Camera size={13} color={C.muted} style={{ flexShrink: 0 }} />
                       <span>{s.service || '—'}</span>
                     </div>
                   </td>
@@ -510,7 +516,7 @@ const doc = {
   invoiceMeta: { textAlign: 'right' },
   invoiceWord: { fontSize: 12, fontWeight: 700, color: C.gold, letterSpacing: '0.25em', textTransform: 'uppercase', margin: 0 },
   invoiceNum: { fontSize: 26, fontWeight: 800, color: '#ffffff', margin: '4px 0 0', letterSpacing: '-0.02em' },
-  invoiceDate: { fontSize: 12, color: '#cbd5e1', margin: '8px 0 0', textAlign: 'right' },
+  invoiceDate: { fontSize: 12, color: '#cbd5e1', margin: '8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
 
   partiesWrap: {
     display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32,
@@ -532,7 +538,7 @@ const doc = {
   },
   partyName: { fontSize: 15, fontWeight: 700, color: C.ink, margin: '0 0 6px', lineHeight: 1.3, wordBreak: 'break-word' },
   partyLines: { display: 'flex', flexDirection: 'column', gap: 4 },
-  partyLine: { display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#4b5563', lineHeight: 1.5, wordBreak: 'break-word' },
+  partyLine: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#4b5563', lineHeight: 1.5, wordBreak: 'break-word' },
 
   tableWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed', boxSizing: 'border-box' },
