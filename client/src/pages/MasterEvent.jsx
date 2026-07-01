@@ -138,18 +138,17 @@ export default function MasterEvent() {
                     >
                       <Edit3 size={16} />
                     </button>
-                    <select
-                      value={cat.isActive !== false ? 'Active' : 'Inactive'}
-                      onChange={(e) => handleStatusChange(cat._id, e.target.value)}
-                      className={`text-xs font-semibold rounded-lg px-2 py-1 outline-none border cursor-pointer ${
-                        cat.isActive !== false 
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                          : 'bg-rose-50 text-rose-700 border-rose-200'
+                    <button
+                      onClick={() => handleStatusChange(cat._id, cat.isActive === false ? 'Active' : 'Inactive')}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        cat.isActive !== false ? 'bg-emerald-500' : 'bg-slate-300'
                       }`}
+                      title={cat.isActive !== false ? 'Active' : 'Inactive'}
                     >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
+                      <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        cat.isActive !== false ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
                   </div>
                 </td>
               </tr>
