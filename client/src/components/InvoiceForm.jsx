@@ -398,6 +398,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                           className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500 w-full"
                           placeholderText="Select date"
                           wrapperClassName="w-full"
+                          portalId="root"
                         />
                       </div>
                       {eventDates.length > 1 && (
@@ -609,6 +610,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                           dateFormat="dd/MM/yyyy"
                           className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full"
                           wrapperClassName="w-full"
+                          portalId="root"
                         />
                       </div>
                       <div>
@@ -655,7 +657,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Receipt Date</label>
                         <DatePicker selected={form.advancePaymentDate2 ? parseISO(form.advancePaymentDate2) : null}
                           onChange={function(date){setForm(f=>({...f, advancePaymentDate2: date ? format(date, 'yyyy-MM-dd') : ''}))}}
-                          dateFormat="dd/MM/yyyy" className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full" wrapperClassName="w-full" />
+                          dateFormat="dd/MM/yyyy" className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full" wrapperClassName="w-full" portalId="root" />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Payment Method</label>
@@ -697,7 +699,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Receipt Date</label>
                         <DatePicker selected={form.advancePaymentDate3 ? parseISO(form.advancePaymentDate3) : null}
                           onChange={function(date){setForm(f=>({...f, advancePaymentDate3: date ? format(date, 'yyyy-MM-dd') : ''}))}}
-                          dateFormat="dd/MM/yyyy" className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full" wrapperClassName="w-full" />
+                          dateFormat="dd/MM/yyyy" className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full" wrapperClassName="w-full" portalId="root" />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">Payment Method</label>
@@ -749,6 +751,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                           dateFormat="dd/MM/yyyy"
                           className="input py-1 text-xs focus:ring-orange-500/20 focus:border-orange-500 w-full"
                           wrapperClassName="w-full"
+                          portalId="root"
                         />
                       </div>
                       <div>
