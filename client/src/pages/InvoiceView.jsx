@@ -327,24 +327,38 @@ export default function InvoiceView() {
           <table style={doc.table}>
             <thead>
               <tr>
-                <th style={{ ...doc.th, textAlign: 'left', width: '35%' }}>Service</th>
-                <th style={{ ...doc.th, textAlign: 'left', width: '65%' }}>Description</th>
+                <th style={{ ...doc.th, textAlign: 'left', width: '28%' }}>Service</th>
+                <th style={{ ...doc.th, textAlign: 'left', width: '38%' }}>Description</th>
+                <th style={{ ...doc.th, textAlign: 'right', width: '17%' }}>Price (₹)</th>
+                <th style={{ ...doc.th, textAlign: 'right', width: '17%' }}>Total (₹)</th>
               </tr>
             </thead>
             <tbody>
-              {invoice.services.map((s, i) => (
-                <tr key={i} style={{ background: C.white }}>
+              {invoice.services && invoice.services.length > 0 ? (
+                <tr style={{ background: C.white }}>
                   <td style={{ ...doc.td, fontWeight: 600, color: C.ink }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Camera size={13} color={C.muted} style={{ flexShrink: 0 }} />
-                      <span>{s.service || '—'}</span>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <Camera size={13} color={C.muted} style={{ flexShrink: 0, marginTop: 3 }} />
+                      <span style={{ lineHeight: 1.5, textTransform: 'uppercase' }}>
+                        {invoice.services.map(s => s.service).join(', ')}
+                      </span>
                     </div>
                   </td>
                   <td style={doc.tdDesc}>
-                    {s.description?.trim() || '—'}
+                    {invoice.services.map(s => s.description?.trim()).filter(Boolean).join(', ') || '—'}
+                  </td>
+                  <td style={{ ...doc.td, textAlign: 'right', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>
+                    {Number(invoice.subTotal || 0).toLocaleString('en-IN')}
+                  </td>
+                  <td style={{ ...doc.td, textAlign: 'right', fontWeight: 700, color: C.ink, fontVariantNumeric: 'tabular-nums' }}>
+                    {Number(invoice.subTotal || 0).toLocaleString('en-IN')}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                <tr style={{ background: C.white }}>
+                  <td colSpan="4" style={{ ...doc.td, textAlign: 'center', color: C.muted }}>No services added</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
