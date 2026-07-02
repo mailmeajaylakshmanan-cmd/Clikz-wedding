@@ -327,10 +327,8 @@ export default function InvoiceView() {
           <table style={doc.table}>
             <thead>
               <tr>
-                <th style={{ ...doc.th, textAlign: 'left', width: '28%' }}>Service</th>
-                <th style={{ ...doc.th, textAlign: 'left', width: '38%' }}>Description</th>
-                <th style={{ ...doc.th, textAlign: 'right', width: '17%' }}>Price (₹)</th>
-                <th style={{ ...doc.th, textAlign: 'right', width: '17%' }}>Total (₹)</th>
+                <th style={{ ...doc.th, textAlign: 'left', width: '35%' }}>Service</th>
+                <th style={{ ...doc.th, textAlign: 'left', width: '65%' }}>Description</th>
               </tr>
             </thead>
             <tbody>
@@ -344,12 +342,6 @@ export default function InvoiceView() {
                   </td>
                   <td style={doc.tdDesc}>
                     {s.description?.trim() || '—'}
-                  </td>
-                  <td style={{ ...doc.td, textAlign: 'right', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>
-                    {Number(s.price || 0).toLocaleString('en-IN')}
-                  </td>
-                  <td style={{ ...doc.td, textAlign: 'right', fontWeight: 700, color: C.ink, fontVariantNumeric: 'tabular-nums' }}>
-                    {Number(s.total || s.price || 0).toLocaleString('en-IN')}
                   </td>
                 </tr>
               ))}
