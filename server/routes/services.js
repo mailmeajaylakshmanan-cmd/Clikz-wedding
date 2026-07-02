@@ -7,7 +7,11 @@ const { secureFind, secureFindOne } = require('../utils/queryHelper');
 router.get('/', auth, async (req, res) => {
   try {
     const query = {};
-    if (req.query.category) query.category = req.query.category;
+    if (req.query.categories) {
+      query.category = { $in: req.query.categories.split(',') };
+    } else if (req.query.category) {
+      query.category = req.query.category;
+    }
     const services = await secureFind(Service, query, req)
       .populate('category', 'name showTerms')
       .sort({ name: 1 })

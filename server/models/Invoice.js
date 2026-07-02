@@ -29,7 +29,7 @@ const invoiceSchema = new mongoose.Schema({
     address: { type: String, default: '' },
   },
   event: { type: String, default: '' },
-  eventCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'EventCategory' },
+  eventCategories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'EventCategory' }],
   eventCategoryName: { type: String, default: '' },
   showTerms: { type: Boolean, default: true },
   termsAndConditions: { type: String, default: '' },

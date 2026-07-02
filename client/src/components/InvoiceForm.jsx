@@ -66,7 +66,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     return {
       ...base,
       ...initial,
-      eventCategory: initial.eventCategory?._id || initial.eventCategory || '',
+      eventCategories: initial.eventCategories?.map(c => c._id || c) || (initial.eventCategory ? [initial.eventCategory._id || initial.eventCategory] : []),
       customer: initial.customer || base.customer,
       services: initial.services || [],
       subTotal: initial.subTotal || 0,
@@ -121,15 +121,15 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
   }, []);
 
   useEffect(function () {
-    const categoryId = form.eventCategory || initial?.eventCategory?._id || initial?.eventCategory;
-    if (!categoryId) {
+    const categoryIds = form.eventCategories;
+    if (!categoryIds || categoryIds.length === 0) {
       setServiceOptions([]);
       return;
     }
-    api.get('/services', { params: { category: categoryId } }).then(function (res) {
+    api.get('/services', { params: { categories: categoryIds.join(',') } }).then(function (res) {
       setServiceOptions(res.data);
     });
-  }, [form.eventCategory, initial?.eventCategory]);
+  }, [form.eventCategories]);
 
   const subTotal = Number(form.subTotal || 0);
   const total = subTotal - Number(form.discount || 0);
@@ -153,14 +153,15 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     }
   }, [balance, total, form.status, form.advancePaid, form.advancePaid2, form.advancePaid3, form.totalPaid]);
 
-  function handleCategoryChange(categoryId) {
-    const category = eventCategories.find(function (c) { return c._id === categoryId; });
+  function handleCategoryChange(selectedOptions) {
+    const ids = selectedOptions ? selectedOptions.map(o => o.value) : [];
+    const names = selectedOptions ? selectedOptions.map(o => o.label).join(', ') : '';
     setForm(function (f) {
       return {
         ...f,
-        eventCategory: categoryId,
-        event: category?.name || f.event,
-        // Clear services when category changes to avoid mismatch
+        eventCategories: ids,
+        eventCategoryName: names,
+        event: names || f.event,
         services: [],
       };
     });
@@ -237,16 +238,23 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     if (!form.customer.name) {
       return alert("Please select a customer.");
     }
-    const category = eventCategories.find(function (c) { return c._id === form.eventCategory; });
+    if (!form.eventCategories || form.eventCategories.length === 0) {
+      return alert("Please select at least one Event Category.");
+    }
+    const categories = eventCategories.filter(c => form.eventCategories.includes(c._id));
+    const terms = categories.filter(c => c.showTerms).map(c => c.termsAndConditions).filter(Boolean).join('\n\n');
+    const showTerms = categories.some(c => c.showTerms);
+    const names = categories.map(c => c.name).join(', ');
+
     onSubmit({
       ...form,
       subTotal,
       total,
       balance,
-      eventCategory: form.eventCategory,
-      eventCategoryName: category?.name || form.event,
-      showTerms: category?.showTerms ?? true,
-      termsAndConditions: category?.showTerms ? (category?.termsAndConditions || '') : '',
+      eventCategories: form.eventCategories,
+      eventCategoryName: names || form.event,
+      showTerms,
+      termsAndConditions: showTerms ? terms : '',
     });
   }
 
@@ -335,21 +343,24 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
           <div className="md:col-span-2 border-t border-slate-100 pt-3 mt-1 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-500 mb-1.5">Event Category *</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  <ShoppingBag size={14} />
-                </span>
-                <select
-                  className="input pl-9 focus:ring-orange-500/20 focus:border-orange-500 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%239CA3AF%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
-                  value={form.eventCategory || ''}
-                  onChange={function (e) { handleCategoryChange(e.target.value); }}
-                  required
-                >
-                  <option value="">Select category</option>
-                  {eventCategories.filter(c => c.isActive !== false || c._id === form.eventCategory).map(function (c) {
-                    return <option key={c._id} value={c._id}>{c.name}</option>;
-                  })}
-                </select>
+              <div className="relative z-40">
+                <Select
+                  isMulti
+                  placeholder="Select categories..."
+                  options={eventCategories.filter(c => c.isActive !== false || (form.eventCategories || []).includes(c._id)).map(c => ({ value: c._id, label: c.name }))}
+                  value={eventCategories.filter(c => (form.eventCategories || []).includes(c._id)).map(c => ({ value: c._id, label: c.name }))}
+                  onChange={handleCategoryChange}
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderColor: '#e2e8f0',
+                      borderRadius: '0.5rem',
+                      boxShadow: 'none',
+                      minHeight: '42px',
+                      '&:hover': { borderColor: '#cbd5e1' }
+                    })
+                  }}
+                />
               </div>
             </div>
 
@@ -442,14 +453,14 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
             </div>
             <h2 className="font-semibold text-slate-800">Required Services</h2>
           </div>
-          {!form.eventCategory && !(initial?.eventCategory?._id || initial?.eventCategory) && (
+          {(!form.eventCategories || form.eventCategories.length === 0) && (
             <span className="text-[10px] bg-orange-50 text-orange-700 font-bold px-2 py-1 rounded border border-orange-100 flex items-center gap-1">
               <AlertCircle size={10} /> Choose Category above
             </span>
           )}
         </div>
 
-        {form.eventCategory ? (
+        {form.eventCategories && form.eventCategories.length > 0 ? (
            serviceOptions.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {serviceOptions.filter(opt => opt.isActive !== false).map((opt) => {

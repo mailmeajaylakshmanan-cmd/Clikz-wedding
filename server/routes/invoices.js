@@ -33,7 +33,7 @@ router.get('/', auth, async (req, res) => {
 // GET single invoice
 router.get('/:id', auth, async (req, res) => {
   try {
-    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req).populate('eventCategory').lean();
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req).populate('eventCategories').lean();
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     res.json(invoice);
   } catch (err) {
