@@ -51,7 +51,7 @@ export default function NewInvoice() {
         </div>
       )}
 
-      <InvoiceForm onSubmit={handleSubmit} loading={loading} onClientSelect={handleClientSelect} />
+      <InvoiceForm onSubmit={handleSubmit} loading={loading} onCustomerSelect={handleClientSelect} />
     </div>
   );
 }

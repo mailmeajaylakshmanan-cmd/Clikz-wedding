@@ -158,46 +158,44 @@ export default function MasterService() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
-      <header className="flex flex-col md:flex-row justify-between md:items-start mb-6 gap-4">
+    <div className="space-y-5 pb-20">
+      {/* Header */}
+      <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#1A202C] tracking-tight">Master Service Management</h1>
-          <p className="text-slate-500 mt-1">Organize and edit all studio services with a smooth accordion interface.</p>
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Service Management</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Organize services by event category.</p>
         </div>
-        <button 
-          onClick={() => handleAdd()} 
-          className="flex items-center justify-center gap-2 bg-[#FF7A00] hover:bg-[#e66e00] text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-500/30 whitespace-nowrap"
+        <button
+          onClick={() => handleAdd()}
+          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-200 w-full sm:w-auto whitespace-nowrap"
         >
-          <Plus size={20} />
+          <Plus size={16} />
           <span>Add Service</span>
         </button>
       </header>
 
-      {/* Top Search & Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+      {/* Search + Filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search services by name or description..."
+            placeholder="Search services…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-all text-slate-700"
+            className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all text-slate-700"
           />
         </div>
-        <div className="w-full md:w-64">
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:bg-white transition-all text-slate-700 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:calc(100%-12px)_center]"
-          >
-            <option value="">Filter by Category</option>
-            {categories.map(cat => (
-              <option key={cat._id} value={cat._id}>{cat.name}</option>
-            ))}
-          </select>
-        </div>
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-orange-400/30 sm:w-48"
+        >
+          <option value="">All Categories</option>
+          {categories.map(cat => (
+            <option key={cat._id} value={cat._id}>{cat.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Accordion Categories */}
@@ -216,19 +214,19 @@ export default function MasterService() {
                 {/* Accordion Header */}
                 <button
                   onClick={() => toggleCategory(cat._id)}
-                  className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors focus:outline-none group"
+                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition-colors focus:outline-none group"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center transition-transform group-hover:scale-105">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
                       {getCategoryIcon(cat.name)}
                     </div>
-                    <h2 className="text-lg font-bold text-[#1A202C]">{cat.name}</h2>
+                    <h2 className="text-sm font-semibold text-slate-800">{cat.name}</h2>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full whitespace-nowrap">
-                      {cat.services.filter(s => s.isActive !== false).length} Services Active
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full whitespace-nowrap">
+                      {cat.services.filter(s => s.isActive !== false).length} active
                     </span>
-                    {isExpanded ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+                    {isExpanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
                   </div>
                 </button>
 
@@ -247,9 +245,9 @@ export default function MasterService() {
                             key={srv._id} 
                             className={`flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors ${idx !== cat.services.length - 1 ? 'border-b border-slate-100' : ''}`}
                           >
-                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                              <span className="font-bold text-[#1A202C] text-[15px]">{srv.name}</span>
-                              <span className="text-sm text-slate-400 truncate pr-4">
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                              <span className="font-semibold text-slate-800 text-sm">{srv.name}</span>
+                              <span className="text-xs text-slate-400 truncate pr-4">
                                 {srv.descriptions && srv.descriptions.length > 0 
                                   ? srv.descriptions.join(', ')
                                   : 'No description available'}

@@ -104,8 +104,8 @@ export default function Layout() {
         className="print-hide"
         style={{
           ...styles.sidebar,
-          width: isMobile ? (isMobileSidebarOpen ? 260 : 0) : (isSidebarCollapsed ? 72 : 260),
-          transform: isMobile ? (isMobileSidebarOpen ? 'translateX(0)' : 'translateX(-260px)') : 'none',
+          width: isMobile ? (isMobileSidebarOpen ? 220 : 0) : (isSidebarCollapsed ? 64 : 220),
+          transform: isMobile ? (isMobileSidebarOpen ? 'translateX(0)' : 'translateX(-220px)') : 'none',
           transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
@@ -113,7 +113,7 @@ export default function Layout() {
         <div
           style={{
             ...styles.logo,
-            padding: isSidebarCollapsed && !isMobile ? '20px 0' : '20px 24px 16px',
+            padding: isSidebarCollapsed && !isMobile ? '18px 0' : '16px 20px',
             justifyContent: isSidebarCollapsed && !isMobile ? 'center' : 'space-between',
           }}
         >
@@ -131,11 +131,7 @@ export default function Layout() {
               <img
                 src={clikzLogo}
                 alt="Clikz Logo"
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  objectFit: 'contain',
-                }}
+                style={{ width: '28px', height: '28px', objectFit: 'contain' }}
               />
             </div>
 
@@ -147,6 +143,18 @@ export default function Layout() {
             )}
           </div>
 
+          {/* Desktop collapse toggle — lives in header row */}
+          {!isMobile && (
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              style={styles.collapseBtn}
+              aria-label="Toggle sidebar"
+            >
+              <Menu size={18} color="#94a3b8" />
+            </button>
+          )}
+
+          {/* Mobile close button */}
           {isMobile && (
             <button
               onClick={() => setIsMobileSidebarOpen(false)}
@@ -157,20 +165,6 @@ export default function Layout() {
             </button>
           )}
         </div>
-
-        {/* Collapse Toggle (Desktop Only) */}
-        {!isMobile && (
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            style={{
-              ...styles.collapseBtn,
-              transform: isSidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)',
-            }}
-            aria-label="Toggle sidebar"
-          >
-            <ChevronRight size={14} color="#8a9aa0" />
-          </button>
-        )}
 
         {/* Navigation */}
         <nav style={styles.nav}>
@@ -216,7 +210,7 @@ export default function Layout() {
         className="print-reset-layout"
         style={{
         ...styles.main,
-        marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 72 : 260),
+        marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 64 : 220),
         transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
 
@@ -325,6 +319,7 @@ export default function Layout() {
     </div>
   );
 }
+
 
 function NavItem({ item, collapsed }) {
   const Icon = item.icon;
@@ -472,26 +467,23 @@ const styles = {
   },
 
   collapseBtn: {
-    position: 'absolute',
-    right: -10,
-    top: 68,
-    width: 20,
-    height: 20,
-    borderRadius: '50%',
-    background: '#1e293b',
-    border: '1px solid rgba(255,255,255,0.1)',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.08)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    zIndex: 60,
-    transition: 'transform 0.3s ease, background 0.2s ease',
+    flexShrink: 0,
+    transition: 'background 0.2s ease',
     padding: 0,
   },
 
   nav: {
     flex: 1,
-    padding: '16px 0',
+    padding: '12px 0',
     display: 'flex',
     flexDirection: 'column',
     gap: 2,
@@ -504,9 +496,9 @@ const styles = {
     color: '#475569',
     letterSpacing: '0.12em',
     textTransform: 'uppercase',
-    padding: '8px 24px 6px',
+    padding: '12px 20px 5px',
     margin: 0,
-    fontWeight: 600,
+    fontWeight: 700,
   },
 
   sbFooter: {
