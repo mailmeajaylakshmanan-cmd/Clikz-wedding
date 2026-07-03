@@ -156,41 +156,44 @@ export default function InvoiceView() {
       const blob = await fetchPDFBlob();
       const file = new File([blob], `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`, { type: 'application/pdf' });
 
-      // Since downloading the PDF takes a few seconds, browsers will block navigator.share()
-      // for security reasons (must be triggered instantly by a click).
-      // So we will always use the fallback: download the file and open WhatsApp!
-      
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      const payments = invoice.payments || [];
-      const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0) || Number(invoice.advancePaid) || 0;
-      
-      const msg = encodeURIComponent(
-        `Hi ${invoice.customer?.name}!\n\nPlease find your invoice *${invoice.invoiceNo}* from CLIKZ WEDDING FILMS attached.\n\n` +
-        `Event: ${invoice.event || 'N/A'}\nLocation: ${invoice.location || 'N/A'}\n\n` +
-        `Total: ${fmt(invoice.total)}\nPaid: ${fmt(totalPaid)}\n` +
-        (invoice.balance > 0 ? `Balance Due: ${fmt(invoice.balance)}\n` : '') +
-        `\nGrateful to be part of your celebration!\nCLIKZ WEDDING FILMS • +91 9994122652`
-      );
-      
-      const newWin = window.open('https://wa.me/91' + invoice.customer.phone + '?text=' + msg, '_blank');
-      if (!newWin || newWin.closed || typeof newWin.closed == 'undefined') {
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
         toast((t) => (
-          <span>
-            Popup blocked! <a href={`https://wa.me/91${invoice.customer.phone}?text=${msg}`} target="_blank" rel="noreferrer" style={{color: '#c2a358', textDecoration: 'underline'}}>Click here to open WhatsApp</a>
-          </span>
-        ), { duration: 10000 });
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <span style={{ fontWeight: '500' }}>PDF Generated!</span>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                navigator.share({
+                  title: `Invoice ${invoice.invoiceNo} — CLIKZ WEDDING FILMS`,
+                  files: [file],
+                }).catch(e => {
+                  if (e.name !== 'AbortError') console.error(e);
+                });
+              }}
+              style={{
+                background: '#10b981', color: 'white', border: 'none', 
+                padding: '6px 12px', borderRadius: '4px', cursor: 'pointer',
+                fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+              }}
+            >
+              Click here to share
+            </button>
+          </div>
+        ), { duration: 15000 });
       } else {
-        toast.success("Opening WhatsApp...");
+        toast.error("File sharing is not supported on this browser.");
       }
     } catch (err) {
       console.error("PDF Generation Error:", err);
-      if (err.name !== 'AbortError') toast.error('Could not generate PDF: ' + (err.message || 'Unknown error'));
+      let errMsg = 'Could not generate PDF for sharing';
+      if (err.response?.data) {
+        try {
+          const decodedString = String.fromCharCode.apply(null, new Uint8Array(err.response.data));
+          const errorData = JSON.parse(decodedString);
+          errMsg = errorData.error || errorData.message || errMsg;
+        } catch(e) {}
+      }
+      toast.error(errMsg);
     } finally {
       setSharing(false);
     }
