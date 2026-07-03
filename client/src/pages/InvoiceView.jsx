@@ -156,30 +156,37 @@ export default function InvoiceView() {
       const blob = await fetchPDFBlob();
       const file = new File([blob], `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`, { type: 'application/pdf' });
 
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: `Invoice ${invoice.invoiceNo} — CLIKZ WEDDING FILMS`,
-          files: [file],
-        });
-      } else {
-        // Fallback: trigger download and open WhatsApp Web
-        const url = URL.createObjectURL(file);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.name;
-        a.click();
-        URL.revokeObjectURL(url);
+      // Since downloading the PDF takes a few seconds, browsers will block navigator.share()
+      // for security reasons (must be triggered instantly by a click).
+      // So we will always use the fallback: download the file and open WhatsApp!
+      
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(url);
 
-        const payments = buildPayments(invoice);
-        const totalPaid = sumPayments(payments) || Number(invoice.advancePaid) || 0;
-        const msg = encodeURIComponent(
-          `Hi ${invoice.customer?.name}!\n\nPlease find your invoice *${invoice.invoiceNo}* from CLIKZ WEDDING FILMS attached.\n\n` +
-          `Event: ${invoice.event || 'N/A'}\nLocation: ${invoice.location || 'N/A'}\n\n` +
-          `Total: ${fmt(invoice.total)}\nPaid: ${fmt(totalPaid)}\n` +
-          (invoice.balance > 0 ? `Balance Due: ${fmt(invoice.balance)}\n` : '') +
-          `\nGrateful to be part of your celebration!\nCLIKZ WEDDING FILMS • +91 9994122652`
-        );
-        window.open('https://wa.me/91' + invoice.customer.phone + '?text=' + msg, '_blank');
+      const payments = invoice.payments || [];
+      const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0) || Number(invoice.advancePaid) || 0;
+      
+      const msg = encodeURIComponent(
+        `Hi ${invoice.customer?.name}!\n\nPlease find your invoice *${invoice.invoiceNo}* from CLIKZ WEDDING FILMS attached.\n\n` +
+        `Event: ${invoice.event || 'N/A'}\nLocation: ${invoice.location || 'N/A'}\n\n` +
+        `Total: ${fmt(invoice.total)}\nPaid: ${fmt(totalPaid)}\n` +
+        (invoice.balance > 0 ? `Balance Due: ${fmt(invoice.balance)}\n` : '') +
+        `\nGrateful to be part of your celebration!\nCLIKZ WEDDING FILMS • +91 9994122652`
+      );
+      
+      const newWin = window.open('https://wa.me/91' + invoice.customer.phone + '?text=' + msg, '_blank');
+      if (!newWin || newWin.closed || typeof newWin.closed == 'undefined') {
+        toast((t) => (
+          <span>
+            Popup blocked! <a href={`https://wa.me/91${invoice.customer.phone}?text=${msg}`} target="_blank" rel="noreferrer" style={{color: '#c2a358', textDecoration: 'underline'}}>Click here to open WhatsApp</a>
+          </span>
+        ), { duration: 10000 });
+      } else {
+        toast.success("Opening WhatsApp...");
       }
     } catch (err) {
       console.error("PDF Generation Error:", err);
