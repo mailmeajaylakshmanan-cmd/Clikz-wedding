@@ -108,8 +108,17 @@ export default function InvoiceView() {
   }
 
   async function fetchPDFBlob() {
-    const response = await api.get(`/invoices/${id}/pdf`, { responseType: 'arraybuffer' });
-    return new Blob([response.data], { type: 'application/pdf' });
+    const response = await api.get(`/invoices/${id}/pdf`);
+    const base64 = response.data.base64;
+    
+    // Decode base64 to Blob
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: 'application/pdf' });
   }
 
   async function handleDownloadPDF() {

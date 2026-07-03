@@ -133,12 +133,12 @@ router.get('/:id/pdf', auth, async (req, res) => {
 
     await browser.close();
 
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Length': pdfBuffer.length,
-      'Content-Disposition': `attachment; filename="Invoice-${invoice.invoiceNo}.pdf"`
+    // Vercel / AWS Lambda can corrupt binary buffers in responses
+    // Sending it as a base64 JSON string is 100% reliable
+    res.json({
+      base64: pdfBuffer.toString('base64'),
+      filename: `Invoice-${invoice.invoiceNo}.pdf`
     });
-    res.send(pdfBuffer);
   } catch (err) {
     console.error("PDF generation failed:", err);
     res.status(500).json({ 
