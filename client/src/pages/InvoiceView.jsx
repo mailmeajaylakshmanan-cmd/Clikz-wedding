@@ -152,38 +152,26 @@ export default function InvoiceView() {
     if (!invoice) return;
     setSharing(true);
     try {
-      // Generate PDF Blob using the backend Puppeteer API
+      // Open the window immediately to bypass popup blockers
+      const waWindow = window.open('about:blank', '_blank');
+      
       const blob = await fetchPDFBlob();
       const file = new File([blob], `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`, { type: 'application/pdf' });
 
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        toast((t) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span style={{ fontWeight: '500' }}>PDF Generated!</span>
-            <button
-              onClick={() => {
-                toast.dismiss(t.id);
-                navigator.share({
-                  title: `Invoice ${invoice.invoiceNo} — CLIKZ WEDDING FILMS`,
-                  files: [file],
-                }).catch(e => {
-                  if (e.name !== 'AbortError') console.error(e);
-                });
-              }}
-              style={{
-                background: '#10b981', color: 'white', border: 'none', 
-                padding: '6px 12px', borderRadius: '4px', cursor: 'pointer',
-                fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-              }}
-            >
-              Click here to share
-            </button>
-          </div>
-        ), { duration: 15000 });
-      } else {
-        toast.error("File sharing is not supported on this browser.");
-      }
+      // Automatically download the PDF so the user can easily attach it
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      // Automatically redirect the new tab to WhatsApp (without text message, as requested)
+      const phone = invoice.customer?.phone?.replace(/\D/g, '') || '';
+      waWindow.location.href = `https://wa.me/${phone.length === 10 ? '91' + phone : phone}`;
+      toast.success("PDF downloaded. Attach it in WhatsApp!");
     } catch (err) {
+      if (waWindow) waWindow.close();
       console.error("PDF Generation Error:", err);
       let errMsg = 'Could not generate PDF for sharing';
       if (err.response?.data) {
