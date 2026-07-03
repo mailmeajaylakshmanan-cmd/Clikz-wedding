@@ -3,7 +3,16 @@ const router = express.Router();
 const Invoice = require('../models/Invoice');
 const auth = require('../middleware/auth');
 const { secureFind, secureFindOne } = require('../utils/queryHelper');
-const puppeteer = require('puppeteer');
+
+// Helper to dynamically import puppeteer to fix Vercel/Serverless ESM errors
+let puppeteerModule;
+async function getPuppeteer() {
+  if (!puppeteerModule) {
+    const p = await import('puppeteer');
+    puppeteerModule = p.default || p;
+  }
+  return puppeteerModule;
+}
 
 // GET all invoices
 
@@ -53,6 +62,7 @@ router.get('/:id/pdf', auth, async (req, res) => {
     const frontendUrl = req.headers.origin || req.headers.referer?.split('/invoices')[0] || 'http://localhost:5173';
     const targetUrl = `${frontendUrl}/invoices/${req.params.id}`;
 
+    const puppeteer = await getPuppeteer();
     const browser = await puppeteer.launch({ 
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox']
