@@ -92,6 +92,8 @@ export default function InvoiceView() {
   const [invoice, setInvoice] = useState(null);
   const [sharing, setSharing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareFile, setShareFile] = useState(null);
 
   useEffect(() => {
     api.get('/invoices/' + id).then(res => setInvoice(res.data));
@@ -150,28 +152,14 @@ export default function InvoiceView() {
 
   async function handleWhatsApp() {
     if (!invoice) return;
+    setShareModalOpen(true);
     setSharing(true);
+    setShareFile(null);
     try {
-      // Open the window immediately to bypass popup blockers
-      const waWindow = window.open('about:blank', '_blank');
-      
       const blob = await fetchPDFBlob();
       const file = new File([blob], `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`, { type: 'application/pdf' });
-
-      // Automatically download the PDF so the user can easily attach it
-      const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      // Automatically redirect the new tab to WhatsApp (without text message, as requested)
-      const phone = invoice.customer?.phone?.replace(/\D/g, '') || '';
-      waWindow.location.href = `https://wa.me/${phone.length === 10 ? '91' + phone : phone}`;
-      toast.success("PDF downloaded. Attach it in WhatsApp!");
+      setShareFile(file);
     } catch (err) {
-      if (waWindow) waWindow.close();
       console.error("PDF Generation Error:", err);
       let errMsg = 'Could not generate PDF for sharing';
       if (err.response?.data) {
@@ -182,9 +170,34 @@ export default function InvoiceView() {
         } catch(e) {}
       }
       toast.error(errMsg);
+      setShareModalOpen(false);
     } finally {
       setSharing(false);
     }
+  }
+
+  function executeShare() {
+    if (navigator.share && navigator.canShare?.({ files: [shareFile] })) {
+      navigator.share({
+        title: `Invoice ${invoice.invoiceNo} — CLIKZ WEDDING FILMS`,
+        files: [shareFile],
+      }).catch(e => {
+        if (e.name !== 'AbortError') console.error(e);
+      });
+    } else {
+      // Fallback for browsers without Web Share API (Firefox desktop, etc)
+      const url = URL.createObjectURL(shareFile);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = shareFile.name;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      const phone = invoice.customer?.phone?.replace(/\D/g, '') || '';
+      window.open(`https://wa.me/${phone.length === 10 ? '91' + phone : phone}`, '_blank');
+      toast.success("PDF downloaded. Attach it in WhatsApp!");
+    }
+    setShareModalOpen(false);
   }
 
   if (!invoice) {
@@ -518,6 +531,45 @@ export default function InvoiceView() {
           .invoice-parties { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
         }
       `}</style>
+      {/* ── Share Modal ── */}
+      {shareModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: '#fff', padding: '30px', borderRadius: '12px', width: '340px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', color: '#111827' }}>Share to WhatsApp</h3>
+            
+            {sharing ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', margin: '24px 0' }}>
+                <div style={{ width: 30, height: 30, borderRadius: '50%', border: `3px solid #25d366`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+                <span style={{ color: '#4b5563', fontSize: '14px' }}>Generating perfect PDF...</span>
+              </div>
+            ) : shareFile ? (
+              <div style={{ margin: '24px 0' }}>
+                <div style={{ width: '48px', height: '48px', background: '#ecfdf5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                </div>
+                <span style={{ color: '#10b981', fontWeight: '600', display: 'block' }}>PDF Ready!</span>
+                <span style={{ color: '#6b7280', fontSize: '13px', display: 'block', marginTop: '4px' }}>Click the button below to open WhatsApp</span>
+              </div>
+            ) : null}
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button 
+                onClick={() => setShareModalOpen(false)}
+                style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeShare}
+                disabled={!shareFile}
+                style={{ flex: 1, padding: '10px', background: '#25d366', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: shareFile ? 'pointer' : 'not-allowed', opacity: shareFile ? 1 : 0.5 }}
+              >
+                Share Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
