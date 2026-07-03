@@ -39,7 +39,7 @@ router.get('/', auth, async (req, res) => {
         eventDates: { $gte: todayStart, $lte: todayEnd }
       }),
       Invoice.aggregate([
-        { $match: { studioId: req.studioId, isDeleted: false, createdAt: { $gte: yearStart } } },
+        { $match: { studioId: req.studioId, isDeleted: false, createdAt: { $type: 'date', $gte: yearStart } } },
         { $group: { _id: { $month: "$createdAt" }, revenue: { $sum: "$total" } } }
       ])
     ]);
