@@ -8,6 +8,7 @@ import {
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import clikzLogo from '../assets/clikz_logo.png';
+import html2pdf from 'html2pdf.js';
 
 // ─── color palette ───────────────────────────────────────────────────────────
 const C = {
@@ -108,24 +109,55 @@ export default function InvoiceView() {
   }
 
   async function fetchPDFBlob() {
-    const response = await api.get(`/invoices/${id}/pdf`, { responseType: 'arraybuffer' });
-    return new Blob([response.data], { type: 'application/pdf' });
+    const element = document.getElementById('invoice-capture');
+    
+    // Temporarily adjust layout for PDF output
+    const originalBorder = element.style.border;
+    const originalShadow = element.style.boxShadow;
+    const originalTransform = element.style.transform;
+    
+    element.style.border = 'none';
+    element.style.boxShadow = 'none';
+    element.style.transform = 'none';
+    
+    const opt = {
+      margin:       0,
+      filename:     `CLIKZ-Invoice-${invoice?.invoiceNo}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Output as blob
+    const pdfWorker = html2pdf().set(opt).from(element);
+    const pdfBlob = await pdfWorker.output('blob');
+    
+    // Restore layout
+    element.style.border = originalBorder;
+    element.style.boxShadow = originalShadow;
+    element.style.transform = originalTransform;
+    
+    return pdfBlob;
   }
 
   async function handleDownloadPDF() {
     if (!invoice) return;
     setDownloading(true);
     try {
-      const blob = await fetchPDFBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const element = document.getElementById('invoice-capture');
+      const opt = {
+        margin:       0,
+        filename:     `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      
+      await html2pdf().set(opt).from(element).save();
+      toast.success('PDF downloaded successfully!');
     } catch (err) {
       console.error("PDF Download Error:", err);
-      toast.error('Could not download PDF');
+      toast.error('Could not download PDF: ' + err.message);
     } finally {
       setDownloading(false);
     }
@@ -135,7 +167,7 @@ export default function InvoiceView() {
     if (!invoice) return;
     setSharing(true);
     try {
-      // Generate PDF Blob using the backend Puppeteer API
+      // Generate PDF Blob using the frontend library
       const blob = await fetchPDFBlob();
       const file = new File([blob], `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`, { type: 'application/pdf' });
 
