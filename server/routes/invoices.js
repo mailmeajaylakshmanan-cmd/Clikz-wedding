@@ -136,7 +136,7 @@ router.get('/:id/pdf', auth, async (req, res) => {
     // Vercel / AWS Lambda can corrupt binary buffers in responses
     // Sending it as a base64 JSON string is 100% reliable
     res.json({
-      base64: pdfBuffer.toString('base64'),
+      base64: Buffer.from(pdfBuffer).toString('base64'),
       filename: `Invoice-${invoice.invoiceNo}.pdf`
     });
   } catch (err) {
