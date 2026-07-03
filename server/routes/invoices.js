@@ -4,14 +4,33 @@ const Invoice = require('../models/Invoice');
 const auth = require('../middleware/auth');
 const { secureFind, secureFindOne } = require('../utils/queryHelper');
 
-// Helper to dynamically import puppeteer to fix Vercel/Serverless ESM errors
-let puppeteerModule;
-async function getPuppeteer() {
-  if (!puppeteerModule) {
+// Helper to launch browser correctly in both local and Serverless/Vercel environments
+async function launchBrowser() {
+  const isLocal = !process.env.VERCEL && !process.env.AWS_REGION && process.env.NODE_ENV !== 'production';
+
+  if (isLocal) {
+    // Local Windows/Mac development
     const p = await import('puppeteer');
-    puppeteerModule = p.default || p;
+    const puppeteer = p.default || p;
+    return await puppeteer.launch({ 
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+  } else {
+    // Vercel / AWS Lambda / Serverless environment
+    const p = await import('puppeteer-core');
+    const puppeteerCore = p.default || p;
+    const c = await import('@sparticuz/chromium');
+    const chromium = c.default || c;
+
+    return await puppeteerCore.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true
+    });
   }
-  return puppeteerModule;
 }
 
 // GET all invoices
@@ -62,11 +81,7 @@ router.get('/:id/pdf', auth, async (req, res) => {
     const frontendUrl = req.headers.origin || req.headers.referer?.split('/invoices')[0] || 'http://localhost:5173';
     const targetUrl = `${frontendUrl}/invoices/${req.params.id}`;
 
-    const puppeteer = await getPuppeteer();
-    const browser = await puppeteer.launch({ 
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    const browser = await launchBrowser();
     const page = await browser.newPage();
 
     // Pass the auth token to puppeteer so it can load the invoice data
@@ -87,12 +102,7 @@ router.get('/:id/pdf', auth, async (req, res) => {
     // Await network idle to ensure data fetching is complete
     await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 30000 });
 
-    const path = require('path');
-    const fs = require('fs');
-    const pdfPath = path.join(__dirname, `../temp-${invoice.invoiceNo}.pdf`);
-
-    await page.pdf({
-      path: pdfPath,
+    const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '0', right: '0', bottom: '0', left: '0' }
@@ -100,12 +110,12 @@ router.get('/:id/pdf', auth, async (req, res) => {
 
     await browser.close();
 
-    res.download(pdfPath, `Invoice-${invoice.invoiceNo}.pdf`, (err) => {
-      if (err) {
-        console.error("PDF transfer failed:", err);
-      }
-      fs.unlink(pdfPath, () => {}); // clean up after sending
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Length': pdfBuffer.length,
+      'Content-Disposition': `attachment; filename="Invoice-${invoice.invoiceNo}.pdf"`
     });
+    res.send(pdfBuffer);
   } catch (err) {
     console.error("PDF generation failed:", err);
     res.status(500).json({ message: 'Failed to generate PDF' });
@@ -115,10 +125,7 @@ router.get('/:id/pdf', auth, async (req, res) => {
 // TEST GET generate invoice PDF (no auth)
 router.get('/test/pdf', async (req, res) => {
   try {
-    const browser = await puppeteer.launch({ 
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    const browser = await launchBrowser();
     const page = await browser.newPage();
     await page.goto('http://localhost:5173', { waitUntil: 'networkidle2', timeout: 30000 });
     const pdfBuffer = await page.pdf({ format: 'A4' });
