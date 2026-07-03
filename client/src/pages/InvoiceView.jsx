@@ -22,6 +22,7 @@ const C = {
   redBal: '#dc2626',
 };
 
+
 // ─── helpers ─────────────────────────────────────────────────────────────────
 function fmt(n) {
   return '₹' + Number(n || 0).toLocaleString('en-IN');
@@ -88,9 +89,9 @@ function sumPayments(payments) {
 // ─── component ───────────────────────────────────────────────────────────────
 export default function InvoiceView() {
   const { id } = useParams();
-  const printRef = useRef(null);
   const [invoice, setInvoice] = useState(null);
   const [sharing, setSharing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     api.get('/invoices/' + id).then(res => setInvoice(res.data));
@@ -102,31 +103,41 @@ export default function InvoiceView() {
     toast.success('Status updated to ' + status);
   }
 
-  function handlePrint() { window.print(); }
+  function handlePrint() {
+    window.print();
+  }
+
+  async function fetchPDFBlob() {
+    const response = await api.get(`/invoices/${id}/pdf`, { responseType: 'arraybuffer' });
+    return new Blob([response.data], { type: 'application/pdf' });
+  }
+
+  async function handleDownloadPDF() {
+    if (!invoice) return;
+    setDownloading(true);
+    try {
+      const blob = await fetchPDFBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF Download Error:", err);
+      toast.error('Could not download PDF');
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   async function handleWhatsApp() {
     if (!invoice) return;
     setSharing(true);
     try {
-      const html2pdfModule = await import('html2pdf.js');
-      const html2pdf = html2pdfModule.default || html2pdfModule;
-      const el = printRef.current;
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename: `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      };
-
-      const pdfBlob = await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          html2pdf().set(opt).from(el).outputPdf('blob').then(resolve).catch(reject);
-        }, 50);
-      });
-
-      const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
+      // Generate PDF Blob using the backend Puppeteer API
+      const blob = await fetchPDFBlob();
+      const file = new File([blob], `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`, { type: 'application/pdf' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
@@ -134,17 +145,18 @@ export default function InvoiceView() {
           files: [file],
         });
       } else {
+        // Fallback: trigger download and open WhatsApp Web
         const url = URL.createObjectURL(file);
         const a = document.createElement('a');
         a.href = url;
-        a.download = opt.filename;
+        a.download = file.name;
         a.click();
         URL.revokeObjectURL(url);
 
         const payments = buildPayments(invoice);
         const totalPaid = sumPayments(payments) || Number(invoice.advancePaid) || 0;
         const msg = encodeURIComponent(
-          `Hi ${invoice.customer.name}!\n\nPlease find your invoice *${invoice.invoiceNo}* from CLIKZ WEDDING FILMS attached.\n\n` +
+          `Hi ${invoice.customer?.name}!\n\nPlease find your invoice *${invoice.invoiceNo}* from CLIKZ WEDDING FILMS attached.\n\n` +
           `Event: ${invoice.event || 'N/A'}\nLocation: ${invoice.location || 'N/A'}\n\n` +
           `Total: ${fmt(invoice.total)}\nPaid: ${fmt(totalPaid)}\n` +
           (invoice.balance > 0 ? `Balance Due: ${fmt(invoice.balance)}\n` : '') +
@@ -222,12 +234,19 @@ export default function InvoiceView() {
           </div>
           <button onClick={handleWhatsApp} disabled={sharing} style={{ ...bar.btn, background: '#25d366', color: '#fff', borderColor: '#25d366', opacity: sharing ? 0.7 : 1 }}>
             <MessageCircle size={14} />
-            {sharing ? 'Generating PDF…' : 'Share PDF'}
+            {sharing ? 'Generating...' : 'WhatsApp'}
           </button>
+          
+          <button onClick={handleDownloadPDF} disabled={downloading} style={{ ...bar.btn, opacity: downloading ? 0.7 : 1 }}>
+            <Printer size={14} />
+            {downloading ? 'Downloading...' : 'Download PDF'}
+          </button>
+          
           <button onClick={handlePrint} style={bar.btn}>
             <Printer size={14} />
             Print
           </button>
+          
           <Link to={`/invoices/${id}/edit`} style={{ ...bar.btn, background: '#0f172a', color: '#fff', borderColor: '#0f172a', textDecoration: 'none' }}>
             <Pencil size={14} />
             Edit
@@ -236,7 +255,7 @@ export default function InvoiceView() {
       </div>
 
       {/* ── Invoice document ── */}
-      <div id="invoice-print" ref={printRef} style={{ ...doc.wrap, position: 'relative' }}>
+      <div id="invoice-print" style={{ ...doc.wrap, position: 'relative' }}>
 
         {/* Subtle Watermark */}
         <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.08, pointerEvents: 'none', zIndex: 0 }}>

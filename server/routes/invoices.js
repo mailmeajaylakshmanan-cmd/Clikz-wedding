@@ -3,8 +3,10 @@ const router = express.Router();
 const Invoice = require('../models/Invoice');
 const auth = require('../middleware/auth');
 const { secureFind, secureFindOne } = require('../utils/queryHelper');
+const puppeteer = require('puppeteer');
 
 // GET all invoices
+
 router.get('/', auth, async (req, res) => {
   try {
     const { status, search, staffingStatus, page = 1, limit = 20 } = req.query;
@@ -38,6 +40,86 @@ router.get('/:id', auth, async (req, res) => {
     res.json(invoice);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// GET generate invoice PDF
+router.get('/:id/pdf', auth, async (req, res) => {
+  try {
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req);
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+
+    // Ensure frontend URL is known
+    const frontendUrl = req.headers.origin || req.headers.referer?.split('/invoices')[0] || 'http://localhost:5173';
+    const targetUrl = `${frontendUrl}/invoices/${req.params.id}`;
+
+    const browser = await puppeteer.launch({ 
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+
+    // Pass the auth token to puppeteer so it can load the invoice data
+    if (req.cookies?.token) {
+      const urlObj = new URL(frontendUrl);
+      await page.setCookie({
+        name: 'token',
+        value: req.cookies.token,
+        domain: urlObj.hostname,
+      });
+    }
+
+    // Bypass React PrivateRoute by setting localStorage before page loads
+    await page.evaluateOnNewDocument(() => {
+      localStorage.setItem('isAuthenticated', 'true');
+    });
+
+    // Await network idle to ensure data fetching is complete
+    await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+
+    const path = require('path');
+    const fs = require('fs');
+    const pdfPath = path.join(__dirname, `../temp-${invoice.invoiceNo}.pdf`);
+
+    await page.pdf({
+      path: pdfPath,
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '0', right: '0', bottom: '0', left: '0' }
+    });
+
+    await browser.close();
+
+    res.download(pdfPath, `Invoice-${invoice.invoiceNo}.pdf`, (err) => {
+      if (err) {
+        console.error("PDF transfer failed:", err);
+      }
+      fs.unlink(pdfPath, () => {}); // clean up after sending
+    });
+  } catch (err) {
+    console.error("PDF generation failed:", err);
+    res.status(500).json({ message: 'Failed to generate PDF' });
+  }
+});
+
+// TEST GET generate invoice PDF (no auth)
+router.get('/test/pdf', async (req, res) => {
+  try {
+    const browser = await puppeteer.launch({ 
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    await page.goto('http://localhost:5173', { waitUntil: 'networkidle2', timeout: 30000 });
+    const pdfBuffer = await page.pdf({ format: 'A4' });
+    await browser.close();
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Length': pdfBuffer.length
+    });
+    res.send(pdfBuffer);
+  } catch (err) {
+    res.status(500).json({ message: 'Error' });
   }
 });
 
