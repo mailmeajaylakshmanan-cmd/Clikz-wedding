@@ -108,7 +108,8 @@ export default function InvoiceView() {
     if (!invoice) return;
     setSharing(true);
     try {
-      const html2pdf = (await import('html2pdf.js')).default;
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
       const el = printRef.current;
       const opt = {
         margin: [10, 10, 10, 10],
@@ -152,7 +153,8 @@ export default function InvoiceView() {
         window.open('https://wa.me/91' + invoice.customer.phone + '?text=' + msg, '_blank');
       }
     } catch (err) {
-      if (err.name !== 'AbortError') toast.error('Could not generate PDF');
+      console.error("PDF Generation Error:", err);
+      if (err.name !== 'AbortError') toast.error('Could not generate PDF: ' + (err.message || 'Unknown error'));
     } finally {
       setSharing(false);
     }
@@ -294,15 +296,28 @@ export default function InvoiceView() {
                 <Phone size={13} color={C.muted} style={{ flexShrink: 0 }} />
                 <span>{invoice.customer.phone}</span>
               </div>
-              {categoryName && (
+              {categoryName || invoice.event ? (
                 <div style={doc.partyLine}>
                   <Film size={13} color={C.muted} style={{ flexShrink: 0 }} />
                   <span>
-                    {categoryName}
-                    {invoice.event && invoice.event.trim().toLowerCase() !== categoryName.trim().toLowerCase() ? ' · ' + invoice.event : ''}
+                    {(() => {
+                      const catStr = (categoryName || '').trim();
+                      const evtStr = (invoice.event || '').trim();
+                      if (!catStr) return evtStr;
+                      if (!evtStr) return catStr;
+                      if (catStr.toLowerCase() === evtStr.toLowerCase()) return catStr;
+
+                      const sortWords = s => s.toLowerCase().split(/[,\s&\-]+/).filter(Boolean).sort().join(' ');
+                      if (sortWords(catStr) === sortWords(evtStr)) return catStr;
+
+                      if (catStr.toLowerCase().includes(evtStr.toLowerCase())) return catStr;
+                      if (evtStr.toLowerCase().includes(catStr.toLowerCase())) return evtStr;
+
+                      return `${catStr} · ${evtStr}`;
+                    })()}
                   </span>
                 </div>
-              )}
+              ) : null}
               {eventDate && (
                 <div style={doc.partyLine}>
                   <Calendar size={13} color={C.muted} style={{ flexShrink: 0 }} />
@@ -425,7 +440,7 @@ export default function InvoiceView() {
             ) : (
               <div style={doc.paidFull}>
                 <CheckCircle2 size={16} color={C.greenPaid} />
-                <span>Paid In Full</span>
+                <span>Paid</span>
               </div>
             )}
           </div>
@@ -452,7 +467,7 @@ export default function InvoiceView() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         @media (max-width: 560px) {
-          .invoice-parties { grid-template-columns: 1fr !important; }
+          .invoice-parties { grid-template-columns: 1fr 1fr !important; gap: 16px !important; }
         }
         @media print {
           .print\\:hidden { display: none !important; }
@@ -465,6 +480,8 @@ export default function InvoiceView() {
             border: none !important;
             overflow: visible !important;
           }
+          /* Revert any mobile responsive grids/gaps back to desktop style for PDF */
+          .invoice-parties { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
         }
       `}</style>
     </div>

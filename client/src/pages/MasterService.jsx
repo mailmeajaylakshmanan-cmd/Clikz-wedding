@@ -160,17 +160,18 @@ export default function MasterService() {
   return (
     <div className="space-y-5 pb-20">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+      <header className="flex flex-row justify-between items-center gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Service Management</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Organize services by event category.</p>
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Service Management</h1>
+          <p className="text-[11px] sm:text-sm text-slate-500 mt-0.5">Organize services by event category.</p>
         </div>
         <button
           onClick={() => handleAdd()}
-          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-200 w-full sm:w-auto whitespace-nowrap"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 bg-orange-500 hover:bg-orange-600 text-white text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-orange-200 shrink-0 whitespace-nowrap"
         >
-          <Plus size={16} />
-          <span>Add Service</span>
+          <Plus size={16} className="w-4 h-4" />
+          <span className="hidden sm:inline">Add Service</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </header>
 

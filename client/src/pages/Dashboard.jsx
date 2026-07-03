@@ -70,16 +70,16 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-2">
+      <div className="flex flex-row justify-between items-center pb-2 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Command Center</h1>
-          <p className="text-sm text-slate-500 mt-1">Financial health &amp; studio operational pipeline</p>
+          <h1 className="text-lg sm:text-2xl font-bold text-slate-800 tracking-tight">Command Center</h1>
+          <p className="text-[11px] sm:text-sm text-slate-500 mt-0.5 sm:mt-1">Financial health &amp; studio operational pipeline</p>
         </div>
-        <div className="mt-4 md:mt-0 flex gap-2">
-          <Link to="/invoices/new" className="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm px-4 py-2.5 rounded-lg shadow-sm transition-colors">
-            + Create New Invoice
-          </Link>
-        </div>
+        <Link to="/invoices/new" className="flex items-center justify-center gap-1 sm:gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg shadow-sm transition-colors shrink-0 whitespace-nowrap">
+          <span className="text-sm sm:text-base">+</span>
+          <span className="hidden sm:inline">Create New Invoice</span>
+          <span className="sm:hidden">New Invoice</span>
+        </Link>
       </div>
 
       {/* KPI metric cards */}
