@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios.js';
 import { Plus, Search, Eye, Edit3, FileText, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { parseSafeDate } from '../utils/dateFormatter.js';
 
 function fmt(n) {
   return '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -10,14 +11,15 @@ function fmt(n) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
-  if (typeof dateStr === 'string' && dateStr.includes('&')) return dateStr;
-  const date = new Date(dateStr);
+  if (typeof dateStr === 'string' && dateStr.includes('&')) {
+    return dateStr.split('&').map(s => {
+       const d = parseSafeDate(s.trim());
+       if (isNaN(d.getTime())) return s.trim();
+       return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    }).join(' & ');
+  }
+  const date = parseSafeDate(dateStr);
   if (isNaN(date.getTime())) {
-    const parts = dateStr.split(/[\/\-]/);
-    if (parts.length === 3) {
-      const d = new Date(parts[2], parts[1] - 1, parts[0]);
-      if (!isNaN(d.getTime())) return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
     return dateStr;
   }
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });

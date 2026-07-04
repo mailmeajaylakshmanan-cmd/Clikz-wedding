@@ -5,6 +5,7 @@ import {
   Film, FileImage, Send, DollarSign, Package, Users,
   Settings, X
 } from 'lucide-react';
+import { parseSafeDate } from '../utils/dateFormatter.js';
 import toast from 'react-hot-toast';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -121,7 +122,7 @@ export default function OperationsBoard() {
                               
                               <div className="flex items-center gap-2 text-[11px] text-slate-400">
                                 <Clock size={12} />
-                                {op.invoice?.eventDate ? new Date(op.invoice.eventDate).toLocaleDateString('en-IN') : 'Date TBD'}
+                                {op.invoice?.eventDate ? parseSafeDate(op.invoice.eventDate).toLocaleDateString('en-IN') : 'Date TBD'}
                               </div>
                             </div>
                           )}

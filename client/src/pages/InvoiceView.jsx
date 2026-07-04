@@ -3,8 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Phone, Mail, AtSign, MapPin, Calendar,
   Printer, MessageCircle, Pencil, CheckCircle2,
-  CreditCard, ChevronDown, Film, Building2, Camera
+  CreditCard, ChevronDown, Film, AlertTriangle, PhoneCall,
+  Clock, ShieldCheck
 } from 'lucide-react';
+import { parseSafeDate } from '../utils/dateFormatter.js';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import clikzLogo from '../assets/clikz_logo.png';
@@ -29,7 +31,7 @@ function fmt(n) {
 }
 function fmtDate(d) {
   if (!d) return null;
-  const parsed = new Date(d);
+  const parsed = parseSafeDate(d);
   if (isNaN(parsed.getTime())) return null;
   return parsed.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }

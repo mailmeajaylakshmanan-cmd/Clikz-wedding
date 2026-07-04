@@ -57,11 +57,15 @@ router.get('/', auth, async (req, res) => {
       .select('invoiceNo customer.name eventCategoryName total status eventDates createdAt')
       .lean();
 
-    // 2. Upcoming Schedule (5 events happening today or future)
-    const upcomingSchedule = await secureFind(Invoice, { eventDates: { $gte: todayStart } }, req)
+    // 2. Schedule (All events for the calendar)
+    const upcomingSchedule = await secureFind(Invoice, { 
+      $or: [
+        { eventDates: { $exists: true, $not: { $size: 0 } } },
+        { eventDate: { $exists: true, $ne: '' } }
+      ]
+    }, req)
       .sort({ 'eventDates': 1 })
-      .limit(5)
-      .select('customer.name location eventDates staffingStatus requiredStaff staffAllocated eventCategoryName')
+      .select('customer.name location eventDate eventDates staffingStatus requiredStaff staffAllocated eventCategoryName')
       .lean();
 
     // 3. Recent Transactions (Generate a mock ledger feed from recent invoices that have payments)

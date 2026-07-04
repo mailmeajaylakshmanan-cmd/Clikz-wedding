@@ -6,6 +6,7 @@ import {
   FileImage, Send, DollarSign, Package, Users, Settings,
   FileText
 } from 'lucide-react';
+import { parseSafeDate } from '../utils/dateFormatter.js';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import clikzLogo from '../assets/clikz_logo.png';
@@ -24,7 +25,7 @@ const C = {
 // ─── helpers ─────────────────────────────────────────────────────────────────
 function displayDate(d) {
   if (!d) return '—';
-  const parsed = new Date(d);
+  const parsed = parseSafeDate(d);
   if (isNaN(parsed.getTime())) return String(d);
   return parsed.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }

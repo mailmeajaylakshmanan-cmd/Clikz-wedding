@@ -1,15 +1,44 @@
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   IndianRupee, Calendar, Users, Activity,
   ArrowUpRight, ArrowDownRight, CheckCircle2, Clock,
-  MapPin, Phone, MessageSquare
+  MapPin, Phone, MessageSquare, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import api from '../api/axios.js';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
+import { parseSafeDate } from '../utils/dateFormatter.js';
+import { getCalendarGrid } from '../utils/calendarUtils.js';
 
 // Mock data removed - fetching from backend only
+const EVENT_COLORS = [
+  'bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 
+  'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-rose-500'
+];
+
+const getColor = (id) => {
+  if (!id) return EVENT_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return EVENT_COLORS[Math.abs(hash) % EVENT_COLORS.length];
+};
+
 export default function Dashboard() {
+  const [calendarDate, setCalendarDate] = useState(new Date());
+
+  const prevMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1));
+  };
+  const nextMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1));
+  };
+
+  const { daysInMonth, firstDayOfMonth } = getCalendarGrid(calendarDate.getFullYear(), calendarDate.getMonth());
+  const monthName = calendarDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['dashboardMetrics'],
     queryFn: () => api.get('/dashboard').then(res => {
@@ -20,19 +49,35 @@ export default function Dashboard() {
         stage: mapStage[inv.status] || 'Enquiry',
         client: inv.customer?.name || 'Unknown',
         service: inv.eventCategoryName || 'Event Service',
-        date: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).toLocaleDateString() : 'TBD',
+        date: inv.eventDates && inv.eventDates.length > 0 
+          ? inv.eventDates.map(d => parseSafeDate(d).toLocaleDateString('en-IN')).join(', ') 
+          : 'TBD',
         value: inv.total || 0
       })) || [];
 
-      const newSchedule = res.data.upcomingSchedule?.map(inv => ({
-        id: inv._id,
-        title: `${inv.customer?.name || 'Unknown'} - ${inv.eventCategoryName || 'Event'}`,
-        time: 'Schedule pending', 
-        location: inv.location || 'TBD',
-        role: inv.staffAllocated?.map(s => s.role).join(', ') || 'Staffing pending',
-        status: inv.staffingStatus || 'Staffing Pending',
-        day: inv.eventDates && inv.eventDates.length > 0 ? new Date(inv.eventDates[0]).getDate() : null
-      })).filter(s => s.day !== null) || [];
+      const newSchedule = res.data.upcomingSchedule?.flatMap(inv => {
+        let datesToUse = [];
+        if (inv.eventDate) {
+          datesToUse = inv.eventDate.split(/&|,/).map(d => d.trim());
+        } else if (inv.eventDates && inv.eventDates.length > 0) {
+          datesToUse = inv.eventDates;
+        }
+        return datesToUse.map(dateStr => {
+          const d = parseSafeDate(dateStr);
+          return {
+            id: `${inv._id}-${dateStr}`,
+            invoiceId: inv._id,
+            title: `${inv.customer?.name || 'Unknown'} - ${inv.eventCategoryName || 'Event'}`,
+            time: 'Schedule pending', 
+            location: inv.location || 'TBD',
+            role: inv.staffAllocated?.map(s => s.role).join(', ') || 'Staffing pending',
+            status: inv.staffingStatus || 'Staffing Pending',
+            day: d && !isNaN(d.getTime()) ? d.getDate() : null,
+            month: d && !isNaN(d.getTime()) ? d.getMonth() : null,
+            year: d && !isNaN(d.getTime()) ? d.getFullYear() : null,
+          };
+        }).filter(s => s.day !== null);
+      }) || [];
 
       return {
         netProfit: res.data.totalReceived || 0,
@@ -255,18 +300,36 @@ export default function Dashboard() {
               <Calendar size={16} className="text-emerald-500" />
               Event Schedule Calendar
             </h2>
-            <Link to="/dispatcher" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors hover:underline">
-              Manage Dispatcher →
-            </Link>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                <button onClick={prevMonth} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-600 transition-colors">
+                  <ChevronLeft size={18} />
+                </button>
+                <span className="w-28 text-center">{monthName}</span>
+                <button onClick={nextMonth} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-emerald-600 transition-colors">
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+              <Link to="/dispatcher" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors hover:underline ml-2">
+                Manage Dispatcher →
+              </Link>
+            </div>
           </div>
           <div className="p-5 flex-1 bg-slate-50/30">
             <div className="grid grid-cols-7 gap-1.5 h-full">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
                 <div key={d} className="text-center text-[10px] font-bold text-slate-400 py-1 uppercase tracking-widest">{d}</div>
               ))}
-              {Array.from({ length: 30 }, (_, i) => {
+              {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                <div key={`pad-${i}`} className="aspect-square bg-transparent"></div>
+              ))}
+              {Array.from({ length: daysInMonth }, (_, i) => {
                 const day = i + 1;
-                const dayEvents = data.weeklySchedule.filter(s => s.day === day);
+                const dayEvents = data.weeklySchedule.filter(s => 
+                  s.day === day && 
+                  s.month === calendarDate.getMonth() && 
+                  s.year === calendarDate.getFullYear()
+                );
                 const hasEvent = dayEvents.length > 0;
                 
                 return (
@@ -283,7 +346,7 @@ export default function Dashboard() {
                     {hasEvent && (
                       <div className="absolute bottom-2 flex gap-1">
                         {dayEvents.map((e, ei) => (
-                          <div key={ei} className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm"></div>
+                          <div key={ei} className={`w-1.5 h-1.5 rounded-full ${getColor(e.invoiceId)} shadow-sm`}></div>
                         ))}
                       </div>
                     )}
@@ -292,13 +355,16 @@ export default function Dashboard() {
                     {hasEvent && (
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-slate-800 text-white text-xs p-3 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
-                        {dayEvents.map((e, ei) => (
-                          <div key={ei} className="mb-2 last:mb-0 border-b border-slate-700 last:border-0 pb-2 last:pb-0 text-left">
-                            <p className="font-bold text-emerald-400 truncate">{e.title}</p>
-                            <p className="text-[10px] text-slate-300 mt-0.5 flex items-center gap-1"><MapPin size={10}/> {e.location}</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1"><Clock size={10}/> {e.time}</p>
-                          </div>
-                        ))}
+                        {dayEvents.map((e, ei) => {
+                          const dotColorClass = getColor(e.invoiceId).replace('bg-', 'text-');
+                          return (
+                            <div key={ei} className="mb-2 last:mb-0 border-b border-slate-700 last:border-0 pb-2 last:pb-0 text-left">
+                              <p className={`font-bold ${dotColorClass} truncate`}>{e.title}</p>
+                              <p className="text-[10px] text-slate-300 mt-0.5 flex items-center gap-1"><MapPin size={10}/> {e.location}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1"><Clock size={10}/> {e.time}</p>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
