@@ -4,7 +4,7 @@ import {
   ArrowLeft, Phone, Mail, AtSign, MapPin, Calendar,
   Printer, MessageCircle, Pencil, CheckCircle2,
   CreditCard, ChevronDown, Film, AlertTriangle, PhoneCall,
-  Clock, ShieldCheck
+  Clock, ShieldCheck, Camera
 } from 'lucide-react';
 import { parseSafeDate } from '../utils/dateFormatter.js';
 import api from '../api/axios.js';
