@@ -79,6 +79,15 @@ export default function QuotationView() {
     api.get('/invoices/' + id).then(res => setQuotation(res.data));
   }, [id]);
 
+  useEffect(() => {
+    if (quotation) {
+      document.title = `Quotation ${quotation.invoiceNo} — CLIKZ WEDDING FILMS`;
+    } else {
+      document.title = 'CLIKZ WEDDING FILMS';
+    }
+    return () => { document.title = 'CLIKZ WEDDING FILMS'; };
+  }, [quotation]);
+
   function handlePrint() {
     window.print();
   }
@@ -285,14 +294,14 @@ export default function QuotationView() {
 
         {/* Services List (Minimalist Icon Layout) */}
         {quotation.services && quotation.services.length > 0 && (
-          <div style={doc.servicesWrap}>
+          <div className="services-wrap" style={doc.servicesWrap}>
             <div style={doc.sectionHeading}>
               <span>Scope of Work</span>
             </div>
             
             <div className="quotation-services" style={doc.servicesGrid}>
               {quotation.services.map((s, i) => (
-                <div key={i} style={doc.serviceItem}>
+                <div key={i} className="service-item" style={doc.serviceItem}>
                   <div style={doc.serviceIconWrap}>
                     {getIconForName(s.service)}
                   </div>
@@ -310,14 +319,14 @@ export default function QuotationView() {
 
         {/* Deliverables List */}
         {quotation.assignedDeliverables && quotation.assignedDeliverables.length > 0 && (
-          <div style={{ ...doc.servicesWrap, marginTop: 32 }}>
+          <div className="services-wrap" style={{ ...doc.servicesWrap, marginTop: 32 }}>
             <div style={doc.sectionHeading}>
               <span>Deliverables</span>
             </div>
             
             <div className="quotation-services" style={doc.servicesGrid}>
               {quotation.assignedDeliverables.map((d, i) => (
-                <div key={i} style={doc.serviceItem}>
+                <div key={i} className="service-item" style={doc.serviceItem}>
                   <div style={doc.serviceIconWrap}>
                     {getIconForName(d.name)}
                   </div>
@@ -391,7 +400,19 @@ export default function QuotationView() {
             overflow: visible !important;
           }
           .invoice-parties { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
-          .quotation-services { grid-template-columns: repeat(2, 1fr) !important; }
+          
+          /* Ensure grid flows nicely across pages */
+          .services-wrap { page-break-inside: auto; break-inside: auto; }
+          .quotation-services { 
+            grid-template-columns: repeat(3, 1fr) !important; 
+            gap: 16px !important;
+            page-break-inside: auto;
+            break-inside: auto;
+          }
+          .service-item {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
         }
       `}</style>
 
@@ -515,11 +536,12 @@ const doc = {
   partyLine: { display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: '#4b5563', lineHeight: 1.5, wordBreak: 'break-word' },
 
   servicesWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box' },
-  servicesGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 },
+  servicesGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 },
   serviceItem: {
     display: 'flex', alignItems: 'center', gap: 12,
     padding: '8px 12px', background: '#ffffff',
-    borderRadius: 8, border: `1px solid #f0f0f0`, boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
+    borderRadius: 8, border: `1px solid #f0f0f0`, boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
+    pageBreakInside: 'avoid', breakInside: 'avoid'
   },
   serviceIconWrap: {
     background: '#fcf8f2', padding: 8, borderRadius: 8,

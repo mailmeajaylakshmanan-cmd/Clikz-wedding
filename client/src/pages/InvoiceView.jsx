@@ -5,7 +5,7 @@ import {
   Printer, MessageCircle, Pencil, CheckCircle2,
   CreditCard, ChevronDown, Film, AlertTriangle, PhoneCall,
   Clock, ShieldCheck, Camera, Sparkles, X, Video, Image as ImageIcon, Package,
-  Aperture, Clapperboard, BookOpen, HardDrive, MonitorPlay, Plane
+  Aperture, Clapperboard, BookOpen, HardDrive, MonitorPlay, Plane, FileText
 } from 'lucide-react';
 import { parseSafeDate } from '../utils/dateFormatter.js';
 import api from '../api/axios.js';
@@ -112,6 +112,15 @@ export default function InvoiceView() {
     });
     api.get('/deliverables').then(res => setMasterDeliverables(res.data));
   }, [id]);
+
+  useEffect(() => {
+    if (invoice) {
+      document.title = `Invoice ${invoice.invoiceNo} — CLIKZ WEDDING FILMS`;
+    } else {
+      document.title = 'CLIKZ WEDDING FILMS';
+    }
+    return () => { document.title = 'CLIKZ WEDDING FILMS'; };
+  }, [invoice]);
 
   function toggleDeliverable(name) {
     const next = new Set(selectedDeliverables);
@@ -433,21 +442,36 @@ export default function InvoiceView() {
             <tbody>
               {invoice.services && invoice.services.length > 0 ? (
                 <tr style={{ background: C.white }}>
-                  <td style={{ ...doc.td, fontWeight: 600, color: C.ink }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                      <Camera size={13} color={C.muted} style={{ flexShrink: 0, marginTop: 3 }} />
-                      <span style={{ lineHeight: 1.5, textTransform: 'uppercase' }}>
-                        {invoice.services.map(s => s.service).join(', ')}
-                      </span>
+                  <td style={{ ...doc.td, fontWeight: 600, color: C.ink, verticalAlign: 'top' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {invoice.services.flatMap(s => s.service ? s.service.split(',').map(x => x.trim()).filter(Boolean) : []).map((serviceName, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                          <Camera size={13} color={C.muted} style={{ flexShrink: 0, marginTop: 2 }} />
+                          <span style={{ lineHeight: 1.5, textTransform: 'uppercase', fontSize: 11 }}>
+                            {serviceName}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </td>
-                  <td style={doc.tdDesc}>
-                    {invoice.services.map(s => s.description?.trim()).filter(Boolean).join(', ') || '—'}
+                  <td style={{ ...doc.tdDesc, verticalAlign: 'top' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {invoice.services.flatMap(s => {
+                        const count = s.service ? s.service.split(',').filter(x => x.trim()).length : 1;
+                        const arr = new Array(count).fill('');
+                        arr[0] = s.description?.trim() || '';
+                        return arr;
+                      }).map((desc, idx) => (
+                        <div key={idx} style={{ lineHeight: 1.5, fontSize: 11, color: desc ? '#4b5563' : '#9ca3af' }}>
+                          {desc || '—'}
+                        </div>
+                      ))}
+                    </div>
                   </td>
-                  <td style={{ ...doc.td, textAlign: 'right', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>
+                  <td style={{ ...doc.td, verticalAlign: 'middle', textAlign: 'right', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>
                     {Number(invoice.subTotal || 0).toLocaleString('en-IN')}
                   </td>
-                  <td style={{ ...doc.td, textAlign: 'right', fontWeight: 700, color: C.ink, fontVariantNumeric: 'tabular-nums' }}>
+                  <td style={{ ...doc.td, verticalAlign: 'middle', textAlign: 'right', fontWeight: 700, color: C.ink, fontVariantNumeric: 'tabular-nums' }}>
                     {Number(invoice.subTotal || 0).toLocaleString('en-IN')}
                   </td>
                 </tr>
@@ -771,9 +795,9 @@ const doc = {
   termsLine: { margin: '0 0 5px', fontSize: 11, lineHeight: 1.6, color: '#6b7280' },
   footer: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-    background: '#f8fafc', borderTop: `1px solid ${C.border}`,
+    background: '#1e293b', borderTop: `1px solid #0f172a`,
     padding: `28px ${PAGE_PAD}px`,
-    fontSize: 12, color: '#64748b', textAlign: 'center',
+    fontSize: 12, color: '#94a3b8', textAlign: 'center',
     width: '100%',
     boxSizing: 'border-box',
   },
