@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, Settings, LogOut,
-  Film, Bell, User, Plus, ChevronRight, Sparkles, Calendar, Briefcase,
+  Film, Bell, User, Plus, ChevronRight, Sparkles, Calendar, Briefcase, Package,
   Menu, X
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -22,6 +22,7 @@ const navGroups = [
       { to: '/master-customer', label: 'Customer', icon: User },
       { to: '/master-event', label: 'Event', icon: Calendar },
       { to: '/master-service', label: 'Service', icon: Briefcase },
+      { to: '/master-deliverable', label: 'Deliverable', icon: Package },
       { to: '/master-crew', label: 'Crew', icon: User },
     ]
   },

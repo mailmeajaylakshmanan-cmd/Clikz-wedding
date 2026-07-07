@@ -37,6 +37,10 @@ const invoiceSchema = new mongoose.Schema({
   eventDates: [Date],
   location: { type: String, default: '' },
   services: [serviceLineSchema],
+  assignedDeliverables: [{
+    name: String,
+    description: String
+  }],
   subTotal: { type: Number, default: 0 },
   discount: { type: Number, default: 0 },
   total: { type: Number, default: 0 },
@@ -70,7 +74,7 @@ const invoiceSchema = new mongoose.Schema({
     name: String,
     role: String,
   }],
-}, { timestamps: true });
+}, { timestamps: true, strict: false });
 
 // Auto-generate invoice number and update staffing status before validation
 invoiceSchema.pre('validate', async function (next) {

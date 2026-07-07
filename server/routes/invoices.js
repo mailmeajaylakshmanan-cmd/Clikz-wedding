@@ -151,6 +151,41 @@ router.get('/:id/pdf', auth, async (req, res) => {
 
 
 
+// GET generate quotation PDF
+router.get('/:id/quotation/pdf', auth, async (req, res) => {
+  try {
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req);
+    if (!invoice) return res.status(404).json({ message: 'Quotation not found' });
+
+    let frontendUrl = req.headers.origin || 'http://localhost:5173';
+    if (!req.headers.origin && req.headers.referer) {
+      if (req.headers.referer.includes('/quotations')) frontendUrl = req.headers.referer.split('/quotations')[0];
+      else if (req.headers.referer.includes('/invoices')) frontendUrl = req.headers.referer.split('/invoices')[0];
+    }
+    const targetUrl = `${frontendUrl}/quotations/${req.params.id}`;
+
+    const browser = await launchBrowser();
+    const page = await browser.newPage();
+
+    if (req.cookies?.token) {
+      const urlObj = new URL(frontendUrl);
+      await page.setCookie({ name: 'token', value: req.cookies.token, domain: urlObj.hostname });
+    }
+
+    await page.evaluateOnNewDocument(() => { localStorage.setItem('isAuthenticated', 'true'); });
+    await page.setViewport({ width: 1280, height: 1024 });
+    await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.waitForSelector('#invoice-print', { timeout: 10000 });
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '0', right: '0', bottom: '0', left: '0' } });
+    await browser.close();
+    res.json({ base64: Buffer.from(pdfBuffer).toString('base64'), filename: `Quotation-${invoice.invoiceNo}.pdf` });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to generate Quotation PDF', error: err.message, stack: err.stack });
+  }
+});
+
 // POST create invoice
 router.post('/', auth, async (req, res) => {
   try {

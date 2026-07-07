@@ -12,6 +12,8 @@ import MasterEvent from './pages/MasterEvent.jsx';
 import MasterService from './pages/MasterService.jsx';
 import MasterCustomer from './pages/MasterCustomer.jsx';
 import MasterCrew from './pages/MasterCrew.jsx';
+import MasterDeliverable from './pages/MasterDeliverable.jsx';
+import QuotationView from './pages/QuotationView.jsx';
 import UpdateCredentials from './pages/UpdateCredentials.jsx';
 import OperationsBoard from './pages/OperationsBoard.jsx';
 
@@ -36,6 +38,8 @@ export default function App() {
         <Route path="master-service" element={<MasterService />} />
         <Route path="master-customer" element={<MasterCustomer />} />
         <Route path="master-crew" element={<MasterCrew />} />
+        <Route path="master-deliverable" element={<MasterDeliverable />} />
+        <Route path="quotations/:id" element={<QuotationView />} />
         <Route path="update-credentials" element={<UpdateCredentials />} />
         <Route path="operations" element={<OperationsBoard />} />
       </Route>

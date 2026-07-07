@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Phone, Mail, AtSign, MapPin, Calendar,
   Printer, MessageCircle, Pencil, CheckCircle2,
   CreditCard, ChevronDown, Film, AlertTriangle, PhoneCall,
-  Clock, ShieldCheck, Camera
+  Clock, ShieldCheck, Camera, Sparkles, X, Video, Image as ImageIcon, Package,
+  Aperture, Clapperboard, BookOpen, HardDrive, MonitorPlay, Plane
 } from 'lucide-react';
 import { parseSafeDate } from '../utils/dateFormatter.js';
 import api from '../api/axios.js';
@@ -91,15 +92,64 @@ function sumPayments(payments) {
 // ─── component ───────────────────────────────────────────────────────────────
 export default function InvoiceView() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [invoice, setInvoice] = useState(null);
+  const [masterDeliverables, setMasterDeliverables] = useState([]);
+  const [selectedDeliverables, setSelectedDeliverables] = useState(new Set());
+  const [quotationModalOpen, setQuotationModalOpen] = useState(false);
+  const [savingQuotation, setSavingQuotation] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareFile, setShareFile] = useState(null);
 
   useEffect(() => {
-    api.get('/invoices/' + id).then(res => setInvoice(res.data));
+    api.get('/invoices/' + id).then(res => {
+      setInvoice(res.data);
+      if (res.data.assignedDeliverables) {
+        setSelectedDeliverables(new Set(res.data.assignedDeliverables.map(d => d.name)));
+      }
+    });
+    api.get('/deliverables').then(res => setMasterDeliverables(res.data));
   }, [id]);
+
+  function toggleDeliverable(name) {
+    const next = new Set(selectedDeliverables);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+    setSelectedDeliverables(next);
+  }
+
+  function handleOpenQuotationModal() {
+    setQuotationModalOpen(true);
+  }
+
+  async function handleGenerateQuotation() {
+    setSavingQuotation(true);
+    try {
+      const toSave = masterDeliverables.filter(d => selectedDeliverables.has(d.name)).map(d => ({ name: d.name, description: d.description }));
+      await api.put(`/invoices/${id}`, { assignedDeliverables: toSave });
+      setInvoice(inv => ({ ...inv, assignedDeliverables: toSave }));
+      setQuotationModalOpen(false);
+      navigate(`/quotations/${id}`);
+    } catch (err) {
+      toast.error('Failed to generate quotation');
+    } finally {
+      setSavingQuotation(false);
+    }
+  }
+
+  function getIconForName(name) {
+    const n = (name || '').toLowerCase();
+    if (n.includes('candid') || n.includes('traditional photo') || n.includes('photography')) return <Aperture size={20} color="#d97706" />;
+    if (n.includes('cinema') || n.includes('teaser')) return <Clapperboard size={20} color="#d97706" />;
+    if (n.includes('album') || n.includes('magazine') || n.includes('print')) return <BookOpen size={20} color="#d97706" />;
+    if (n.includes('pendrive') || n.includes('drive') || n.includes('usb')) return <HardDrive size={20} color="#d97706" />;
+    if (n.includes('drone') || n.includes('aerial')) return <Plane size={20} color="#d97706" />;
+    if (n.includes('video') || n.includes('traditional video')) return <MonitorPlay size={20} color="#d97706" />;
+    if (n.includes('photo') || n.includes('image')) return <ImageIcon size={20} color="#d97706" />;
+    return <Package size={20} color="#d97706" />;
+  }
 
   async function updateStatus(status) {
     await api.patch('/invoices/' + id + '/status', { status });
@@ -114,8 +164,6 @@ export default function InvoiceView() {
   async function fetchPDFBlob() {
     const response = await api.get(`/invoices/${id}/pdf`);
     const base64 = response.data.base64;
-    
-    // Decode base64 to Blob
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -137,16 +185,7 @@ export default function InvoiceView() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("PDF Download Error:", err);
-      let errMsg = 'Could not download PDF';
-      if (err.response?.data) {
-        try {
-          const decodedString = String.fromCharCode.apply(null, new Uint8Array(err.response.data));
-          const errorData = JSON.parse(decodedString);
-          errMsg = errorData.error || errorData.message || errMsg;
-        } catch(e) {}
-      }
-      toast.error(errMsg);
+      toast.error('Could not download PDF');
     } finally {
       setDownloading(false);
     }
@@ -162,23 +201,14 @@ export default function InvoiceView() {
       const file = new File([blob], `CLIKZ-Invoice-${invoice.invoiceNo}.pdf`, { type: 'application/pdf' });
       setShareFile(file);
     } catch (err) {
-      console.error("PDF Generation Error:", err);
-      let errMsg = 'Could not generate PDF for sharing';
-      if (err.response?.data) {
-        try {
-          const decodedString = String.fromCharCode.apply(null, new Uint8Array(err.response.data));
-          const errorData = JSON.parse(decodedString);
-          errMsg = errorData.error || errorData.message || errMsg;
-        } catch(e) {}
-      }
-      toast.error(errMsg);
+      toast.error('Could not generate PDF for sharing');
       setShareModalOpen(false);
     } finally {
       setSharing(false);
     }
   }
 
-  function executeShare() {
+  function handleDirectShare() {
     if (navigator.share && navigator.canShare?.({ files: [shareFile] })) {
       navigator.share({
         title: `Invoice ${invoice.invoiceNo} — CLIKZ WEDDING FILMS`,
@@ -187,7 +217,6 @@ export default function InvoiceView() {
         if (e.name !== 'AbortError') console.error(e);
       });
     } else {
-      // Fallback for browsers without Web Share API (Firefox desktop, etc)
       const url = URL.createObjectURL(shareFile);
       const a = document.createElement('a');
       a.href = url;
@@ -231,7 +260,6 @@ export default function InvoiceView() {
   ];
 
   const categoryName = invoice.eventCategoryName || invoice.eventCategory?.name || '';
-  const iconStyle = { verticalAlign: 'middle', marginRight: 8, position: 'relative', top: '-1px' };
 
   return (
     <div>
@@ -281,6 +309,11 @@ export default function InvoiceView() {
             <Pencil size={14} />
             Edit
           </Link>
+          
+          <button onClick={handleOpenQuotationModal} style={{ ...bar.btn, color: C.gold, borderColor: C.gold, background: '#fef3c7' }}>
+            <Sparkles size={14} />
+            Generate Quotation
+          </button>
         </div>
       </div>
 
@@ -529,40 +562,91 @@ export default function InvoiceView() {
             border: none !important;
             overflow: visible !important;
           }
-          /* Revert any mobile responsive grids/gaps back to desktop style for PDF */
           .invoice-parties { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
         }
       `}</style>
-      {/* ── Share Modal ── */}
-      {shareModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div style={{ background: '#fff', padding: '30px', borderRadius: '12px', width: '340px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', color: '#111827' }}>Share to WhatsApp</h3>
-            
-            {sharing ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', margin: '24px 0' }}>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', border: `3px solid #25d366`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
-                <span style={{ color: '#4b5563', fontSize: '14px' }}>Generating perfect PDF...</span>
-              </div>
-            ) : shareFile ? (
-              <div style={{ margin: '24px 0' }}>
-                <div style={{ width: '48px', height: '48px', background: '#ecfdf5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                </div>
-                <span style={{ color: '#10b981', fontWeight: '600', display: 'block' }}>PDF Ready!</span>
-                <span style={{ color: '#6b7280', fontSize: '13px', display: 'block', marginTop: '4px' }}>Click the button below to open WhatsApp</span>
-              </div>
-            ) : null}
 
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+      {quotationModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', padding: 16 }} onClick={() => setQuotationModalOpen(false)}>
+          <div style={{ background: '#fff', padding: 32, borderRadius: 16, width: 540, maxWidth: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px', fontSize: 20, color: '#0f172a' }}>Select Deliverables</h3>
+                <p style={{ margin: '0 0 16px', fontSize: 14, color: '#64748b' }}>Choose which deliverables to include in this quotation.</p>
+              </div>
+              <button onClick={() => setQuotationModalOpen(false)} style={{ background: '#f1f5f9', border: 'none', padding: 6, borderRadius: '50%', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ maxHeight: '60vh', overflowY: 'auto', marginBottom: 24 }}>
+              {masterDeliverables.map(d => (
+                <div key={d.name} onClick={() => toggleDeliverable(d.name)} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 12, border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: 8, cursor: 'pointer', background: selectedDeliverables.has(d.name) ? '#f0f9ff' : '#fff', borderColor: selectedDeliverables.has(d.name) ? '#bae6fd' : '#e2e8f0' }}>
+                  <div style={{ marginTop: 2 }}>
+                    {selectedDeliverables.has(d.name) ? <CheckCircle2 size={18} color="#0284c7" /> : <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1px solid #cbd5e1' }} />}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{d.name}</h4>
+                    {d.description && <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>{d.description}</p>}
+                  </div>
+                </div>
+              ))}
+              {masterDeliverables.length === 0 && (
+                <div style={{ padding: 24, textAlign: 'center', color: '#64748b', fontSize: 14 }}>No deliverables found in master list.</div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
               <button 
-                onClick={() => setShareModalOpen(false)}
-                style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
+                onClick={() => setQuotationModalOpen(false)} 
+                style={{ padding: '10px 16px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', fontWeight: '500', cursor: 'pointer' }}
               >
                 Cancel
               </button>
               <button 
-                onClick={executeShare}
+                onClick={handleGenerateQuotation}
+                disabled={savingQuotation}
+                style={{ padding: '10px 24px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: savingQuotation ? 'not-allowed' : 'pointer', opacity: savingQuotation ? 0.7 : 1 }}
+              >
+                {savingQuotation ? 'Saving...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {shareModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', padding: 16 }} onClick={() => setShareModalOpen(false)}>
+          <div style={{ background: '#fff', padding: 32, borderRadius: 16, width: 440, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px', fontSize: 20, color: '#0f172a' }}>Share Document</h3>
+                <p style={{ margin: '0 0 16px', fontSize: 14, color: '#64748b' }}>Send the PDF directly via WhatsApp or download it to your device.</p>
+              </div>
+              <button onClick={() => setShareModalOpen(false)} style={{ background: '#f1f5f9', border: 'none', padding: 6, borderRadius: '50%', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ padding: 24, background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+              <div style={{ width: 48, height: 48, background: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                <FileText size={24} color="#D4AF37" />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 600, color: '#1e293b' }}>CLIKZ-Invoice-{invoice.invoiceNo}.pdf</div>
+                <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>PDF Document • {shareFile ? (shareFile.size / 1024).toFixed(0) + ' KB' : 'Generating...'}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={() => { setShareModalOpen(false); handleDownloadPDF(); }} 
+                style={{ flex: 1, padding: '10px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Download Only
+              </button>
+              <button 
+                onClick={handleDirectShare}
                 disabled={!shareFile}
                 style={{ flex: 1, padding: '10px', background: '#25d366', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: shareFile ? 'pointer' : 'not-allowed', opacity: shareFile ? 1 : 0.5 }}
               >
