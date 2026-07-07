@@ -443,29 +443,36 @@ export default function InvoiceView() {
               {invoice.services && invoice.services.length > 0 ? (
                 <tr style={{ background: C.white }}>
                   <td style={{ ...doc.td, fontWeight: 600, color: C.ink, verticalAlign: 'top' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {invoice.services.flatMap(s => s.service ? s.service.split(',').map(x => x.trim()).filter(Boolean) : []).map((serviceName, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                          <Camera size={13} color={C.muted} style={{ flexShrink: 0, marginTop: 2 }} />
-                          <span style={{ lineHeight: 1.5, textTransform: 'uppercase', fontSize: 11 }}>
-                            {serviceName}
-                          </span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxWidth: '450px' }}>
+                      {invoice.services.map(s => s.service).filter(Boolean).join(', ').split(',').filter(x => x.trim()).map((service, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          <span>{service.trim()}</span>
                         </div>
                       ))}
                     </div>
                   </td>
                   <td style={{ ...doc.tdDesc, verticalAlign: 'top' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {invoice.services.flatMap(s => {
-                        const count = s.service ? s.service.split(',').filter(x => x.trim()).length : 1;
-                        const arr = new Array(count).fill('');
-                        arr[0] = s.description?.trim() || '';
-                        return arr;
-                      }).map((desc, idx) => (
-                        <div key={idx} style={{ lineHeight: 1.5, fontSize: 11, color: desc ? '#4b5563' : '#9ca3af' }}>
-                          {desc || '—'}
-                        </div>
-                      ))}
+                      {invoice.services.filter(s => s.description?.trim()).length > 0 ? (
+                        invoice.services.filter(s => s.description?.trim()).map((s, idx) => (
+                          <div key={idx} style={{ lineHeight: 1.5, fontSize: 11, color: '#4b5563' }}>
+                            {s.description.trim()}
+                          </div>
+                        ))
+                      ) : (
+                        <div style={{ lineHeight: 1.5, fontSize: 11, color: '#9ca3af' }}>—</div>
+                      )}
                     </div>
                   </td>
                   <td style={{ ...doc.td, verticalAlign: 'middle', textAlign: 'right', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>
