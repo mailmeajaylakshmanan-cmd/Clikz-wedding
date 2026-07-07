@@ -233,15 +233,15 @@ export default function QuotationView() {
       {/* ── QUOTATION DOCUMENT ── */}
       <div id="invoice-print" style={doc.wrap}>
         {/* Header Band */}
-        <div style={doc.headerBand}>
-          <div style={doc.logoZone}>
+        <div className="quotation-header" style={doc.headerBand}>
+          <div className="quotation-logo-zone" style={doc.logoZone}>
             <img src={clikzLogo} alt="Logo" style={doc.logo} />
             <div>
               <h1 style={doc.brandName}>CLIKZ WEDDING FILMS</h1>
               <p style={doc.brandTagline}>Turning moments into memories</p>
             </div>
           </div>
-          <div style={doc.invoiceMeta}>
+          <div className="quotation-meta" style={doc.invoiceMeta}>
             <h2 style={doc.invoiceWord}>QUOTATION</h2>
             <p style={doc.invoiceNum}>{quotation.invoiceNo}</p>
             <p style={doc.invoiceDate}>
@@ -290,7 +290,7 @@ export default function QuotationView() {
               <span>Scope of Work</span>
             </div>
             
-            <div style={doc.servicesGrid}>
+            <div className="quotation-services" style={doc.servicesGrid}>
               {quotation.services.map((s, i) => (
                 <div key={i} style={doc.serviceItem}>
                   <div style={doc.serviceIconWrap}>
@@ -315,7 +315,7 @@ export default function QuotationView() {
               <span>Deliverables</span>
             </div>
             
-            <div style={doc.servicesGrid}>
+            <div className="quotation-services" style={doc.servicesGrid}>
               {quotation.assignedDeliverables.map((d, i) => (
                 <div key={i} style={doc.serviceItem}>
                   <div style={doc.serviceIconWrap}>
@@ -336,23 +336,15 @@ export default function QuotationView() {
 
         {/* Totals */}
         <div style={doc.totalsWrap}>
-          <div style={doc.totalsBox}>
-            <div style={doc.totalRow}>
-              <span style={doc.totalLabel}>Sub Total</span>
-              <span style={doc.totalVal}>{fmt(quotation.subTotal)}</span>
-            </div>
-            {quotation.discount > 0 && (
-              <div style={doc.totalRow}>
-                <span style={doc.totalLabel}>Discount</span>
-                <span style={{ ...doc.totalVal, color: C.greenPaid }}>− {fmt(quotation.discount)}</span>
+          <div className="quotation-totals" style={doc.premiumTotalsBox}>
+            <div style={doc.premiumTotalsInner}>
+              <div style={doc.totalRowCentered}>
+                <span style={doc.premiumTotalLabel}>Total Amount</span>
               </div>
-            )}
-
-            <div style={{ borderTop: `1px solid ${C.border}`, margin: '8px 0' }} />
-
-            <div style={doc.totalRow}>
-              <span style={{ ...doc.totalLabel, fontWeight: 700, color: C.ink, fontSize: 14 }}>Total Amount</span>
-              <span style={{ ...doc.totalVal, fontWeight: 800, color: C.ink, fontSize: 15 }}>{fmt(quotation.total)}</span>
+              <div style={doc.premiumDivider} />
+              <div style={doc.totalRowCentered}>
+                <span style={doc.premiumTotalVal}>₹ {fmt(quotation.total)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -378,8 +370,14 @@ export default function QuotationView() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @media (max-width: 560px) {
+        @media (max-width: 640px) {
           .invoice-parties { grid-template-columns: 1fr !important; gap: 24px !important; }
+          .quotation-services { grid-template-columns: 1fr !important; }
+          .quotation-header { flex-direction: column !important; align-items: flex-start !important; gap: 20px !important; }
+          .quotation-logo-zone { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+          .quotation-meta { text-align: left !important; }
+          .quotation-meta p { justify-content: flex-start !important; }
+          .quotation-totals { float: none !important; width: 100% !important; max-width: 100% !important; }
         }
         @media print {
           .print\\:hidden { display: none !important; }
@@ -393,6 +391,7 @@ export default function QuotationView() {
             overflow: visible !important;
           }
           .invoice-parties { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
+          .quotation-services { grid-template-columns: repeat(2, 1fr) !important; }
         }
       `}</style>
 
@@ -534,11 +533,19 @@ const doc = {
   serviceTotal: { fontSize: 16, fontWeight: 700, color: C.ink, fontVariantNumeric: 'tabular-nums' },
   serviceBasePrice: { fontSize: 13, color: C.muted, textDecoration: 'line-through' },
 
-  totalsWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', width: '100%' },
-  totalsBox: { pageBreakInside: 'avoid', float: 'right', width: '100%', maxWidth: 360, background: C.faint, borderRadius: 12, padding: '24px', border: `1px solid ${C.border}` },
-  totalRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' },
-  totalLabel: { fontSize: 15, color: '#4b5563' },
-  totalVal: { fontSize: 15, fontWeight: 600, color: C.ink, fontVariantNumeric: 'tabular-nums' },
+  totalsWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', width: '100%', display: 'flex', justifyContent: 'center' },
+  premiumTotalsBox: { 
+    pageBreakInside: 'avoid', width: '100%', maxWidth: 400, 
+    background: 'linear-gradient(145deg, #fcfcfc, #f3f4f6)', 
+    borderRadius: 16, padding: '32px', 
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.03)'
+  },
+  premiumTotalsInner: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 },
+  totalRowCentered: { display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' },
+  premiumTotalLabel: { fontSize: 14, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' },
+  premiumTotalVal: { fontSize: 32, fontWeight: 800, color: C.ink, fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.02em' },
+  premiumDivider: { width: '40px', height: '2px', background: '#D4AF37', margin: '8px 0', borderRadius: 2 },
 
   termsBox: {
     margin: `0 ${PAGE_PAD}px ${SECTION_GAP}px`,

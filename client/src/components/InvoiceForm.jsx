@@ -11,7 +11,7 @@ import api from '../api/axios.js';
 import {
   User, Phone, MapPin, Plus, Trash2, BadgeCheck, Sparkles,
   Receipt, AlertCircle, Hash, Home, CheckSquare, Settings,
-  Calendar, IndianRupee,
+  Calendar, IndianRupee, Package,
 } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -204,6 +204,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       totalPaid: 0, totalPaymentDate: today, totalPaymentMethod: 'Cash',
       status: 'pending', notes: 'Grateful to be part of your celebration.', requiredStaff: 0,
       showAdvance: false, showAdvance2: false, showAdvance3: false, showFinal: false,
+      assignedDeliverables: [],
     };
     if (!initial) return base;
     return {
@@ -212,6 +213,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
         (initial.eventCategory ? [initial.eventCategory._id || initial.eventCategory] : []),
       customer: initial.customer || base.customer,
       services: initial.services || [],
+      assignedDeliverables: initial.assignedDeliverables || [],
       subTotal: initial.subTotal || 0,
       requiredStaff: initial.requiredStaff || 0,
       showAdvance: Number(initial.advancePaid) > 0,
@@ -224,6 +226,9 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
   const [eventCategories, setEventCategories] = useState([]);
   const [serviceOptions, setServiceOptions] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [masterDeliverables, setMasterDeliverables] = useState([]);
+  const [newDeliverableName, setNewDeliverableName] = useState('');
+  const [isAddingDeliverable, setIsAddingDeliverable] = useState(false);
   const [eventDates, setEventDates] = useState(() => parseEventDateString(initial?.eventDate || ''));
 
   const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -244,6 +249,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
   useEffect(() => {
     api.get('/event-categories').then(r => setEventCategories(r.data));
     api.get('/customers').then(r => setCustomers(r.data));
+    api.get('/deliverables').then(r => setMasterDeliverables(r.data));
   }, []);
 
   useEffect(() => {
@@ -282,6 +288,33 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
 
   function updateServiceDesc(name, desc) {
     setForm(f => ({ ...f, services: f.services.map(s => s.service === name ? { ...s, description: desc } : s) }));
+  }
+
+  function handleDeliverableChange(selectedOptions) {
+    const selected = selectedOptions || [];
+    const newAssigned = selected.map(opt => {
+      const existing = form.assignedDeliverables.find(d => d.name === opt.value);
+      return existing || { name: opt.value, description: opt.deliverable.description || '' };
+    });
+    setForm(f => ({ ...f, assignedDeliverables: newAssigned }));
+  }
+
+  async function handleAddNewDeliverable() {
+    if (!newDeliverableName.trim()) return;
+    setIsAddingDeliverable(true);
+    try {
+      const res = await api.post('/deliverables', { name: newDeliverableName.trim(), description: '' });
+      setMasterDeliverables(prev => [...prev, res.data]);
+      
+      const newD = { name: res.data.name, description: '' };
+      setForm(f => ({ ...f, assignedDeliverables: [...f.assignedDeliverables, newD] }));
+      setNewDeliverableName('');
+    } catch (e) {
+      console.error(e);
+      alert('Error adding deliverable');
+    } finally {
+      setIsAddingDeliverable(false);
+    }
   }
 
   function toggleAdvance(c) {
@@ -540,11 +573,59 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
         )}
       </Section>
 
-      {/* ── 3 + 4. Billing & Settings ── */}
+      {/* ── 3. Deliverables ── */}
+      <Section step="3" icon={Package} title="Scope & Deliverables">
+        <div className="flex flex-col gap-3">
+          <Field label="Assign Deliverables">
+            <Select
+              isMulti
+              isClearable
+              isSearchable
+              placeholder="Search existing deliverables..."
+              styles={selectStyles()}
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              options={masterDeliverables.map(d => ({ value: d.name, label: d.name, deliverable: d }))}
+              value={form.assignedDeliverables.map(d => ({ value: d.name, label: d.name }))}
+              onChange={handleDeliverableChange}
+            />
+          </Field>
+          
+          <div className="flex items-end gap-2 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+            <div className="flex-1">
+              <Field label="Or Quick Add New Deliverable">
+                <input
+                  type="text"
+                  className={inputCls}
+                  placeholder="e.g. 60 Pages Candid Album"
+                  value={newDeliverableName}
+                  onChange={e => setNewDeliverableName(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddNewDeliverable();
+                    }
+                  }}
+                />
+              </Field>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddNewDeliverable}
+              disabled={isAddingDeliverable || !newDeliverableName.trim()}
+              className="h-[32px] px-4 flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:hover:bg-orange-500 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+            >
+              {isAddingDeliverable ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Sparkles size={14} />}
+              Add
+            </button>
+          </div>
+        </div>
+      </Section>
+{/* ── 4 + 5. Billing & Settings ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
         {/* Billing panel */}
-        <Section step="3" icon={Receipt} title="Billing & Payments" className="h-fit">
+        <Section step="4" icon={Receipt} title="Billing & Payments" className="h-fit">
 
           {/* Price + Discount */}
           <div className="space-y-2 mb-3">
@@ -656,7 +737,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
 
         {/* Settings + Submit */}
         <div className="flex flex-col gap-3">
-          <Section step="4" icon={Settings} title="Additional Details">
+          <Section step="5" icon={Settings} title="Additional Details">
             <div className="space-y-3">
               <Field label="Photographers / Staff Required">
                 <div className="flex items-center gap-3 mt-1">
