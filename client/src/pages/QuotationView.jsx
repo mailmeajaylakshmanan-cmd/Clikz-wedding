@@ -44,25 +44,25 @@ function displayDate(d) {
 }
 
 // Map service names to distinct minimalist icons
-function getIconForName(itemName) {
+function getIconForName(itemName, size = 13) {
   const name = (itemName || '').toLowerCase();
-  
-  if (name.includes('traditional')) return <Aperture size={20} color="#D4AF37" strokeWidth={1.5} />;
-  if (name.includes('candid') || name.includes('photo') || name.includes('shoot') || name.includes('portrait')) return <Camera size={20} color="#D4AF37" strokeWidth={1.5} />;
-  
-  if (name.includes('cinematography')) return <Clapperboard size={20} color="#D4AF37" strokeWidth={1.5} />;
-  if (name.includes('video') || name.includes('teaser') || name.includes('highlight') || name.includes('reels')) return <Video size={20} color="#D4AF37" strokeWidth={1.5} />;
-  
-  if (name.includes('book') || name.includes('magazine')) return <BookOpen size={20} color="#D4AF37" strokeWidth={1.5} />;
-  if (name.includes('album') || name.includes('print') || name.includes('frame') || name.includes('canvas')) return <ImageIcon size={20} color="#D4AF37" strokeWidth={1.5} />;
-  
-  if (name.includes('pendrive') || name.includes('hard drive') || name.includes('usb') || name.includes('drive')) return <HardDrive size={20} color="#D4AF37" strokeWidth={1.5} />;
-  
-  if (name.includes('led') || name.includes('tv') || name.includes('screen') || name.includes('display')) return <MonitorPlay size={20} color="#D4AF37" strokeWidth={1.5} />;
-  
-  if (name.includes('drone') || name.includes('crane') || name.includes('aerial')) return <Plane size={20} color="#D4AF37" strokeWidth={1.5} />;
-  
-  return <Sparkles size={20} color="#D4AF37" strokeWidth={1.5} />;
+
+  if (name.includes('traditional')) return <Aperture size={size} color="#D4AF37" strokeWidth={1.5} />;
+  if (name.includes('candid') || name.includes('photo') || name.includes('shoot') || name.includes('portrait')) return <Camera size={size} color="#D4AF37" strokeWidth={1.5} />;
+
+  if (name.includes('cinematography')) return <Clapperboard size={size} color="#D4AF37" strokeWidth={1.5} />;
+  if (name.includes('video') || name.includes('teaser') || name.includes('highlight') || name.includes('reels')) return <Video size={size} color="#D4AF37" strokeWidth={1.5} />;
+
+  if (name.includes('book') || name.includes('magazine')) return <BookOpen size={size} color="#D4AF37" strokeWidth={1.5} />;
+  if (name.includes('album') || name.includes('print') || name.includes('frame') || name.includes('canvas')) return <ImageIcon size={size} color="#D4AF37" strokeWidth={1.5} />;
+
+  if (name.includes('pendrive') || name.includes('hard drive') || name.includes('usb') || name.includes('drive')) return <HardDrive size={size} color="#D4AF37" strokeWidth={1.5} />;
+
+  if (name.includes('led') || name.includes('tv') || name.includes('screen') || name.includes('display')) return <MonitorPlay size={size} color="#D4AF37" strokeWidth={1.5} />;
+
+  if (name.includes('drone') || name.includes('crane') || name.includes('aerial')) return <Plane size={size} color="#D4AF37" strokeWidth={1.5} />;
+
+  return <Sparkles size={size} color="#D4AF37" strokeWidth={1.5} />;
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
@@ -95,12 +95,12 @@ export default function QuotationView() {
   async function fetchPDFBlob() {
     const response = await api.get(`/invoices/${id}/quotation/pdf`);
     const base64 = response.data.base64;
-    
+
     // Decode base64 to Blob
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
     const byteArray = new Uint8Array(byteNumbers);
     return new Blob([byteArray], { type: 'application/pdf' });
@@ -127,7 +127,7 @@ export default function QuotationView() {
           const decodedString = String.fromCharCode.apply(null, new Uint8Array(err.response.data));
           const errorData = JSON.parse(decodedString);
           errMsg = errorData.error || errorData.message || errMsg;
-        } catch(e) {}
+        } catch (e) { }
       }
       toast.error(errMsg);
     } finally {
@@ -152,7 +152,7 @@ export default function QuotationView() {
           const decodedString = String.fromCharCode.apply(null, new Uint8Array(err.response.data));
           const errorData = JSON.parse(decodedString);
           errMsg = errorData.error || errorData.message || errMsg;
-        } catch(e) {}
+        } catch (e) { }
       }
       toast.error(errMsg);
       setShareModalOpen(false);
@@ -176,7 +176,7 @@ export default function QuotationView() {
       a.download = shareFile.name;
       a.click();
       URL.revokeObjectURL(url);
-      
+
       const phone = quotation.customer?.phone?.replace(/\D/g, '') || '';
       window.open(`https://wa.me/${phone.length === 10 ? '91' + phone : phone}`, '_blank');
       toast.success("PDF downloaded. Attach it in WhatsApp!");
@@ -226,12 +226,12 @@ export default function QuotationView() {
             <MessageCircle size={14} />
             {sharing ? 'Generating...' : 'WhatsApp'}
           </button>
-          
+
           <button onClick={handleDownloadPDF} disabled={downloading} style={{ ...bar.btn, opacity: downloading ? 0.7 : 1 }}>
             <Download size={14} />
             {downloading ? 'Downloading...' : 'Download PDF'}
           </button>
-          
+
           <button onClick={handlePrint} style={bar.btn}>
             <Printer size={14} />
             Print
@@ -274,7 +274,7 @@ export default function QuotationView() {
               )}
             </div>
           </div>
-          
+
           <div style={doc.partyCard}>
             <h3 style={doc.sectionLabel}>Event Details</h3>
             <div style={doc.partyName}>{quotation.eventName || 'Wedding Event'}</div>
@@ -298,19 +298,24 @@ export default function QuotationView() {
             <div style={doc.sectionHeading}>
               <span>Scope of Work</span>
             </div>
-            
-            <div className="quotation-services" style={doc.servicesGrid}>
-              {quotation.services.map((s, i) => (
-                <div key={i} className="service-item" style={doc.serviceItem}>
-                  <div style={doc.serviceIconWrap}>
-                    {getIconForName(s.service)}
-                  </div>
-                  <div style={doc.serviceContent}>
-                    <h4 style={doc.serviceTitle}>
-                      {s.service}
-                      {s.description && <span style={doc.serviceDesc}> — {s.description}</span>}
-                    </h4>
-                  </div>
+
+            <div className="quotation-services" style={doc.servicesFlex}>
+              {quotation.services.map(s => s.service).filter(Boolean).join(', ').split(',').filter(x => x.trim()).map((service, index) => (
+                <div key={index} style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#f8fafc',
+                  border: `1px solid #e2e8f0`,
+                  color: '#334155',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                }}>
+                  {getIconForName(service.trim(), 14)}
+                  <span>{service.trim()}</span>
                 </div>
               ))}
             </div>
@@ -323,19 +328,24 @@ export default function QuotationView() {
             <div style={doc.sectionHeading}>
               <span>Deliverables</span>
             </div>
-            
-            <div className="quotation-services" style={doc.servicesGrid}>
-              {quotation.assignedDeliverables.map((d, i) => (
-                <div key={i} className="service-item" style={doc.serviceItem}>
-                  <div style={doc.serviceIconWrap}>
-                    {getIconForName(d.name)}
-                  </div>
-                  <div style={doc.serviceContent}>
-                    <h4 style={doc.serviceTitle}>
-                      {d.name}
-                      {d.description && <span style={doc.serviceDesc}> — {d.description}</span>}
-                    </h4>
-                  </div>
+
+            <div className="quotation-services" style={doc.servicesFlex}>
+              {quotation.assignedDeliverables.map(d => d.name).filter(Boolean).join(', ').split(',').filter(x => x.trim()).map((name, index) => (
+                <div key={index} style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: '#f8fafc',
+                  border: `1px solid #e2e8f0`,
+                  color: '#334155',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                }}>
+                  {getIconForName(name.trim(), 14)}
+                  <span>{name.trim()}</span>
                 </div>
               ))}
             </div>
@@ -358,12 +368,10 @@ export default function QuotationView() {
           </div>
         </div>
 
-        <div style={{ clear: 'both', height: 32 }}></div>
-
         {/* Terms & Conditions */}
         <div className="terms-page-break" style={doc.termsBox}>
           <p style={doc.termsTitle}>Terms &amp; Conditions</p>
-          <ul style={{ margin: 0, paddingLeft: 18, color: C.muted, fontSize: 11, lineHeight: 1.7, listStyleType: 'disc' }}>
+          <ul style={{ margin: 0, paddingLeft: 18, color: C.muted, fontSize: 11, lineHeight: 1.4, listStyleType: 'disc' }}>
             {staticTerms.map((term, i) => (
               <li key={i} style={{ marginBottom: 4 }}>{term}</li>
             ))}
@@ -390,7 +398,7 @@ export default function QuotationView() {
         }
         @media print {
           .print\\:hidden { display: none !important; }
-          .terms-page-break { page-break-inside: avoid; margin-top: 40px !important; border: none !important; background: transparent !important; }
+          .terms-page-break { page-break-inside: avoid; margin-top: 8px !important; border: none !important; background: transparent !important; }
           #invoice-print {
             max-width: 100% !important;
             margin: 0 !important;
@@ -404,14 +412,11 @@ export default function QuotationView() {
           /* Ensure grid flows nicely across pages */
           .services-wrap { page-break-inside: auto; break-inside: auto; }
           .quotation-services { 
-            grid-template-columns: repeat(3, 1fr) !important; 
-            gap: 16px !important;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 10px !important;
             page-break-inside: auto;
             break-inside: auto;
-          }
-          .service-item {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
           }
         }
       `}</style>
@@ -421,7 +426,7 @@ export default function QuotationView() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
           <div style={{ background: '#fff', padding: '30px', borderRadius: '12px', width: '340px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '20px', color: '#111827' }}>Share to WhatsApp</h3>
-            
+
             {sharing ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', margin: '24px 0' }}>
                 <div style={{ width: 30, height: 30, borderRadius: '50%', border: `3px solid #25d366`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
@@ -438,13 +443,13 @@ export default function QuotationView() {
             ) : null}
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <button 
+              <button
                 onClick={() => setShareModalOpen(false)}
                 style={{ flex: 1, padding: '10px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={executeShare}
                 disabled={!shareFile}
                 style={{ flex: 1, padding: '10px', background: '#25d366', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: shareFile ? 'pointer' : 'not-allowed', opacity: shareFile ? 1 : 0.5 }}
@@ -477,7 +482,7 @@ const bar = {
 };
 
 // ─── document styles ──────────────────────────────────────────────────────────
-const SECTION_GAP = 24;
+const SECTION_GAP = 16;
 const PAGE_PAD = 32;
 
 const doc = {
@@ -493,7 +498,7 @@ const doc = {
   headerBand: {
     background: C.brand,
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: `32px ${PAGE_PAD}px`,
+    padding: `20px ${PAGE_PAD}px`,
     width: '100%',
     boxSizing: 'border-box',
     borderBottom: '1px solid #0f172a',
@@ -515,7 +520,7 @@ const doc = {
 
   partiesWrap: {
     display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40,
-    margin: `32px ${PAGE_PAD}px`,
+    margin: `20px ${PAGE_PAD}px`,
     boxSizing: 'border-box',
   },
   partyCard: {
@@ -532,17 +537,11 @@ const doc = {
     marginBottom: 20, borderBottom: 'none', paddingBottom: 0,
   },
   partyName: { fontSize: 16, fontWeight: 700, color: C.ink, margin: '0 0 8px', lineHeight: 1.3, wordBreak: 'break-word' },
-  partyLines: { display: 'flex', flexDirection: 'column', gap: 6 },
+  partyLines: { display: 'flex', flexDirection: 'column', gap: 4 },
   partyLine: { display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: '#4b5563', lineHeight: 1.5, wordBreak: 'break-word' },
 
-  servicesWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box' },
-  servicesGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 },
-  serviceItem: {
-    display: 'flex', alignItems: 'center', gap: 12,
-    padding: '8px 12px', background: '#ffffff',
-    borderRadius: 8, border: `1px solid #f0f0f0`, boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
-    pageBreakInside: 'avoid', breakInside: 'avoid'
-  },
+  servicesWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: 16, boxSizing: 'border-box' },
+  servicesFlex: { display: 'flex', flexWrap: 'wrap', gap: 10 },
   serviceIconWrap: {
     background: '#fcf8f2', padding: 8, borderRadius: 8,
     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -556,10 +555,10 @@ const doc = {
   serviceBasePrice: { fontSize: 13, color: C.muted, textDecoration: 'line-through' },
 
   totalsWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', width: '100%', display: 'flex', justifyContent: 'center' },
-  premiumTotalsBox: { 
-    pageBreakInside: 'avoid', width: '100%', maxWidth: 400, 
-    background: 'linear-gradient(145deg, #fcfcfc, #f3f4f6)', 
-    borderRadius: 16, padding: '32px', 
+  premiumTotalsBox: {
+    pageBreakInside: 'avoid', width: '100%', maxWidth: 400,
+    background: 'linear-gradient(145deg, #fcfcfc, #f3f4f6)',
+    borderRadius: 16, padding: '24px',
     border: '1px solid #e5e7eb',
     boxShadow: '0 10px 30px rgba(0,0,0,0.03)'
   },
@@ -578,7 +577,7 @@ const doc = {
   footer: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
     background: C.brand,
-    padding: `20px ${PAGE_PAD}px`,
+    padding: `12px ${PAGE_PAD}px`,
     fontSize: 12, color: '#94a3b8', textAlign: 'center',
     width: '100%',
     boxSizing: 'border-box',

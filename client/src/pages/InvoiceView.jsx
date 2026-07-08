@@ -148,16 +148,18 @@ export default function InvoiceView() {
     }
   }
 
-  function getIconForName(name) {
-    const n = (name || '').toLowerCase();
-    if (n.includes('candid') || n.includes('traditional photo') || n.includes('photography')) return <Aperture size={20} color="#d97706" />;
-    if (n.includes('cinema') || n.includes('teaser')) return <Clapperboard size={20} color="#d97706" />;
-    if (n.includes('album') || n.includes('magazine') || n.includes('print')) return <BookOpen size={20} color="#d97706" />;
-    if (n.includes('pendrive') || n.includes('drive') || n.includes('usb')) return <HardDrive size={20} color="#d97706" />;
-    if (n.includes('drone') || n.includes('aerial')) return <Plane size={20} color="#d97706" />;
-    if (n.includes('video') || n.includes('traditional video')) return <MonitorPlay size={20} color="#d97706" />;
-    if (n.includes('photo') || n.includes('image')) return <ImageIcon size={20} color="#d97706" />;
-    return <Package size={20} color="#d97706" />;
+  function getIconForName(itemName, size = 13) {
+    const name = (itemName || '').toLowerCase();
+    if (name.includes('traditional')) return <Aperture size={size} color="#D4AF37" strokeWidth={1.5} />;
+    if (name.includes('candid') || name.includes('photo') || name.includes('shoot') || name.includes('portrait')) return <Camera size={size} color="#D4AF37" strokeWidth={1.5} />;
+    if (name.includes('cinematography')) return <Clapperboard size={size} color="#D4AF37" strokeWidth={1.5} />;
+    if (name.includes('video') || name.includes('teaser') || name.includes('highlight') || name.includes('reels')) return <Video size={size} color="#D4AF37" strokeWidth={1.5} />;
+    if (name.includes('book') || name.includes('magazine')) return <BookOpen size={size} color="#D4AF37" strokeWidth={1.5} />;
+    if (name.includes('album') || name.includes('print') || name.includes('frame') || name.includes('canvas')) return <ImageIcon size={size} color="#D4AF37" strokeWidth={1.5} />;
+    if (name.includes('pendrive') || name.includes('hard drive') || name.includes('usb') || name.includes('drive')) return <HardDrive size={size} color="#D4AF37" strokeWidth={1.5} />;
+    if (name.includes('led') || name.includes('tv') || name.includes('screen') || name.includes('display')) return <MonitorPlay size={size} color="#D4AF37" strokeWidth={1.5} />;
+    if (name.includes('drone') || name.includes('crane') || name.includes('aerial')) return <Plane size={size} color="#D4AF37" strokeWidth={1.5} />;
+    return <Sparkles size={size} color="#D4AF37" strokeWidth={1.5} />;
   }
 
   async function updateStatus(status) {
@@ -433,46 +435,35 @@ export default function InvoiceView() {
           <table style={doc.table}>
             <thead>
               <tr>
-                <th style={{ ...doc.th, textAlign: 'left', width: '28%' }}>Service</th>
-                <th style={{ ...doc.th, textAlign: 'left', width: '38%' }}>Description</th>
-                <th style={{ ...doc.th, textAlign: 'right', width: '17%' }}>Price (₹)</th>
-                <th style={{ ...doc.th, textAlign: 'right', width: '17%' }}>Total (₹)</th>
+                <th style={{ ...doc.th, textAlign: 'left', width: '60%' }}>Service</th>
+                <th style={{ ...doc.th, textAlign: 'right', width: '20%' }}>Price (₹)</th>
+                <th style={{ ...doc.th, textAlign: 'right', width: '20%' }}>Total (₹)</th>
               </tr>
             </thead>
             <tbody>
               {invoice.services && invoice.services.length > 0 ? (
                 <tr style={{ background: C.white }}>
                   <td style={{ ...doc.td, fontWeight: 600, color: C.ink, verticalAlign: 'top' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxWidth: '450px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {invoice.services.map(s => s.service).filter(Boolean).join(', ').split(',').filter(x => x.trim()).map((service, index) => (
                         <div key={index} style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '6px',
                           backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          padding: '4px 10px',
+                          border: `1px solid #e2e8f0`,
+                          color: '#334155',
+                          padding: '5px 10px',
                           borderRadius: '6px',
                           fontSize: '11px',
-                          fontWeight: '500',
-                          whiteSpace: 'nowrap'
+                          fontWeight: '600',
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                         }}>
+                          {getIconForName(service.trim(), 13)}
                           <span>{service.trim()}</span>
                         </div>
                       ))}
-                    </div>
-                  </td>
-                  <td style={{ ...doc.tdDesc, verticalAlign: 'top' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {invoice.services.filter(s => s.description?.trim()).length > 0 ? (
-                        invoice.services.filter(s => s.description?.trim()).map((s, idx) => (
-                          <div key={idx} style={{ lineHeight: 1.5, fontSize: 11, color: '#4b5563' }}>
-                            {s.description.trim()}
-                          </div>
-                        ))
-                      ) : (
-                        <div style={{ lineHeight: 1.5, fontSize: 11, color: '#9ca3af' }}>—</div>
-                      )}
                     </div>
                   </td>
                   <td style={{ ...doc.td, verticalAlign: 'middle', textAlign: 'right', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>
@@ -558,12 +549,11 @@ export default function InvoiceView() {
             )}
           </div>
         </div>
-        <div style={{ clear: 'both' }}></div>
 
         {/* Terms & Conditions */}
         <div className="terms-page-break" style={doc.termsBox}>
           <p style={doc.termsTitle}>Terms &amp; Conditions</p>
-          <ul style={{ margin: 0, paddingLeft: 18, color: C.muted, fontSize: 11, lineHeight: 1.6, listStyleType: 'disc' }}>
+          <ul style={{ margin: 0, paddingLeft: 18, color: C.muted, fontSize: 11, lineHeight: 1.4, listStyleType: 'disc' }}>
             {staticTerms.map((term, i) => (
               <li key={i} style={{ marginBottom: 4 }}>{term}</li>
             ))}
@@ -584,7 +574,7 @@ export default function InvoiceView() {
         }
         @media print {
           .print\\:hidden { display: none !important; }
-          .terms-page-break { page-break-inside: avoid; margin-top: 40px !important; border: none !important; background: transparent !important; }
+          .terms-page-break { page-break-inside: avoid; margin-top: 4px !important; border: none !important; background: transparent !important; }
           #invoice-print {
             max-width: 100% !important;
             margin: 0 !important;
@@ -593,7 +583,9 @@ export default function InvoiceView() {
             border: none !important;
             overflow: visible !important;
           }
-          .invoice-parties { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
+          .invoice-parties { grid-template-columns: 1fr 1fr !important; gap: 16px !important; margin: 12px 32px !important; }
+          #invoice-print th, #invoice-print td { padding: 4px 8px !important; }
+          .invoice-parties p { margin: 0 0 4px !important; }
         }
       `}</style>
 
@@ -715,8 +707,8 @@ const bar = {
 };
 
 // ─── invoice document styles ──────────────────────────────────────────────────
-const SECTION_GAP = 24;
-const PAGE_PAD = 40;
+const SECTION_GAP = 8;
+const PAGE_PAD = 32;
 
 const doc = {
   wrap: {
@@ -730,7 +722,7 @@ const doc = {
   headerBand: {
     background: '#1e293b',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: `24px ${PAGE_PAD}px`,
+    padding: `12px ${PAGE_PAD}px`,
     width: '100%',
     boxSizing: 'border-box',
     borderBottom: '1px solid #0f172a',
@@ -745,8 +737,8 @@ const doc = {
   invoiceDate: { fontSize: 12, color: '#cbd5e1', margin: '8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
 
   partiesWrap: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32,
-    margin: `24px ${PAGE_PAD}px`,
+    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20,
+    margin: `12px ${PAGE_PAD}px`,
     boxSizing: 'border-box',
   },
   partyCard: {
@@ -760,26 +752,25 @@ const doc = {
   sectionHeading: {
     fontSize: 13, fontWeight: 700, color: C.ink,
     letterSpacing: '0.08em', textTransform: 'uppercase',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   partyName: { fontSize: 15, fontWeight: 700, color: C.ink, margin: '0 0 6px', lineHeight: 1.3, wordBreak: 'break-word' },
   partyLines: { display: 'flex', flexDirection: 'column', gap: 4 },
   partyLine: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#4b5563', lineHeight: 1.5, wordBreak: 'break-word' },
 
   tableWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed', boxSizing: 'border-box' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'fixed', boxSizing: 'border-box' },
   th: {
     background: '#f8fafc', color: '#475569',
-    padding: '12px 16px', fontSize: 11,
+    padding: '4px 8px', fontSize: 10,
     fontWeight: 700, letterSpacing: '0.05em',
     border: `1px solid ${C.border}`,
     textTransform: 'uppercase',
   },
-  td: { padding: '12px 16px', border: `1px solid ${C.border}`, verticalAlign: 'middle' },
-  tdDesc: { padding: '12px 16px', border: `1px solid ${C.border}`, verticalAlign: 'middle', fontSize: 13, lineHeight: 1.5, color: '#4b5563' },
+  td: { padding: '4px 8px', border: `1px solid ${C.border}`, verticalAlign: 'middle' },
 
-  totalsWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', width: '100%' },
-  totalsBox: { pageBreakInside: 'avoid', float: 'right', width: '100%', maxWidth: 340, background: '#f8fafc', borderRadius: 8, padding: '16px 20px', border: `1px solid ${C.border}` },
+  totalsWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', width: '100%', display: 'flex', justifyContent: 'flex-end' },
+  totalsBox: { pageBreakInside: 'avoid', width: '100%', maxWidth: 340, background: '#f8fafc', borderRadius: 8, padding: '10px 16px', border: `1px solid ${C.border}` },
   totalRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' },
   totalLabel: { fontSize: 14, color: '#4b5563' },
   totalVal: { fontSize: 14, fontWeight: 600, color: C.ink, fontVariantNumeric: 'tabular-nums' },
@@ -803,7 +794,7 @@ const doc = {
   footer: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
     background: '#1e293b', borderTop: `1px solid #0f172a`,
-    padding: `28px ${PAGE_PAD}px`,
+    padding: `12px ${PAGE_PAD}px`,
     fontSize: 12, color: '#94a3b8', textAlign: 'center',
     width: '100%',
     boxSizing: 'border-box',
