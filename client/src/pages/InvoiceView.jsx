@@ -428,14 +428,14 @@ export default function InvoiceView() {
         </div>
 
         {/* Services table */}
-        <div style={doc.tableWrap}>
+        <div style={{ ...doc.tableWrap, marginBottom: 24 }}>
           <div style={doc.sectionHeading}>
             <span style={{ verticalAlign: 'middle' }}>Services</span>
           </div>
           <table style={doc.table}>
             <thead>
               <tr>
-                <th style={{ ...doc.th, textAlign: 'left', width: '60%' }}>Service</th>
+                <th style={{ ...doc.th, textAlign: 'center', width: '60%' }}>Service</th>
                 <th style={{ ...doc.th, textAlign: 'right', width: '20%' }}>Price (₹)</th>
                 <th style={{ ...doc.th, textAlign: 'right', width: '20%' }}>Total (₹)</th>
               </tr>
@@ -443,8 +443,8 @@ export default function InvoiceView() {
             <tbody>
               {invoice.services && invoice.services.length > 0 ? (
                 <tr style={{ background: C.white }}>
-                  <td style={{ ...doc.td, fontWeight: 600, color: C.ink, verticalAlign: 'top' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <td style={{ ...doc.td, fontWeight: 600, color: C.ink, verticalAlign: 'middle', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center' }}>
                       {invoice.services.map(s => s.service).filter(Boolean).join(', ').split(',').filter(x => x.trim()).map((service, index) => (
                         <div key={index} style={{
                           display: 'flex',
@@ -491,7 +491,7 @@ export default function InvoiceView() {
             <table style={{ ...doc.table, marginBottom: 0 }}>
               <thead>
                 <tr>
-                  <th style={{ ...doc.th, textAlign: 'left' }}>Date</th>
+                  <th style={{ ...doc.th, textAlign: 'center' }}>Date</th>
                   <th style={{ ...doc.th, textAlign: 'center' }}>Method</th>
                   <th style={{ ...doc.th, textAlign: 'right' }}>Amount (₹)</th>
                 </tr>
@@ -499,7 +499,7 @@ export default function InvoiceView() {
               <tbody>
                 {payments.map((p, i) => (
                   <tr key={i} style={{ background: C.white }}>
-                    <td style={doc.td}>{fmtDate(p.date)}</td>
+                    <td style={{ ...doc.td, textAlign: 'center' }}>{fmtDate(p.date)}</td>
                     <td style={{ ...doc.td, textAlign: 'center', textTransform: 'capitalize', color: C.muted }}>{p.method || 'Cash'}</td>
                     <td style={{ ...doc.td, textAlign: 'right', fontWeight: 600, color: C.ink, fontVariantNumeric: 'tabular-nums' }}>{fmt(p.amount)}</td>
                   </tr>
@@ -523,11 +523,11 @@ export default function InvoiceView() {
               </div>
             )}
 
-            <div style={{ borderTop: `1px solid ${C.border}`, margin: '8px 0' }} />
+            <div style={{ borderTop: `1px solid ${C.border}`, margin: '6px 0' }} />
 
             <div style={doc.totalRow}>
-              <span style={{ ...doc.totalLabel, fontWeight: 700, color: C.ink, fontSize: 14 }}>Total Amount</span>
-              <span style={{ ...doc.totalVal, fontWeight: 800, color: C.ink, fontSize: 15 }}>{fmt(invoice.total)}</span>
+              <span style={{ ...doc.totalLabel, fontWeight: 700, color: C.ink, fontSize: 13 }}>Total Amount</span>
+              <span style={{ ...doc.totalVal, fontWeight: 800, color: C.ink, fontSize: 14 }}>{fmt(invoice.total)}</span>
             </div>
             <div style={doc.totalRow}>
               <span style={doc.totalLabel}>
@@ -538,8 +538,8 @@ export default function InvoiceView() {
 
             {hasBalance ? (
               <div style={doc.balanceDue}>
-                <span style={{ fontWeight: 700, color: C.redBal, fontSize: 14 }}>Balance Due</span>
-                <span style={{ fontWeight: 800, color: C.redBal, fontSize: 16, fontVariantNumeric: 'tabular-nums' }}>{fmt(invoice.balance)}</span>
+                <span style={{ fontWeight: 700, color: C.redBal, fontSize: 13 }}>Balance Due</span>
+                <span style={{ fontWeight: 800, color: C.redBal, fontSize: 15, fontVariantNumeric: 'tabular-nums' }}>{fmt(invoice.balance)}</span>
               </div>
             ) : (
               <div style={doc.paidFull}>
@@ -707,7 +707,7 @@ const bar = {
 };
 
 // ─── invoice document styles ──────────────────────────────────────────────────
-const SECTION_GAP = 8;
+const SECTION_GAP = 12;
 const PAGE_PAD = 32;
 
 const doc = {
@@ -722,7 +722,7 @@ const doc = {
   headerBand: {
     background: '#1e293b',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: `12px ${PAGE_PAD}px`,
+    padding: `16px ${PAGE_PAD}px`,
     width: '100%',
     boxSizing: 'border-box',
     borderBottom: '1px solid #0f172a',
@@ -737,8 +737,8 @@ const doc = {
   invoiceDate: { fontSize: 12, color: '#cbd5e1', margin: '8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
 
   partiesWrap: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20,
-    margin: `12px ${PAGE_PAD}px`,
+    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32,
+    margin: `16px ${PAGE_PAD}px`,
     boxSizing: 'border-box',
   },
   partyCard: {
@@ -752,7 +752,7 @@ const doc = {
   sectionHeading: {
     fontSize: 13, fontWeight: 700, color: C.ink,
     letterSpacing: '0.08em', textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   partyName: { fontSize: 15, fontWeight: 700, color: C.ink, margin: '0 0 6px', lineHeight: 1.3, wordBreak: 'break-word' },
   partyLines: { display: 'flex', flexDirection: 'column', gap: 4 },
@@ -762,15 +762,15 @@ const doc = {
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'fixed', boxSizing: 'border-box' },
   th: {
     background: '#f8fafc', color: '#475569',
-    padding: '4px 8px', fontSize: 10,
+    padding: '6px 12px', fontSize: 10,
     fontWeight: 700, letterSpacing: '0.05em',
     border: `1px solid ${C.border}`,
     textTransform: 'uppercase',
   },
-  td: { padding: '4px 8px', border: `1px solid ${C.border}`, verticalAlign: 'middle' },
+  td: { padding: '6px 12px', border: `1px solid ${C.border}`, verticalAlign: 'middle' },
 
   totalsWrap: { padding: `0 ${PAGE_PAD}px`, marginBottom: SECTION_GAP, boxSizing: 'border-box', width: '100%', display: 'flex', justifyContent: 'flex-end' },
-  totalsBox: { pageBreakInside: 'avoid', width: '100%', maxWidth: 340, background: '#f8fafc', borderRadius: 8, padding: '10px 16px', border: `1px solid ${C.border}` },
+  totalsBox: { pageBreakInside: 'avoid', width: '100%', maxWidth: 340, background: '#f8fafc', borderRadius: 8, padding: '12px 20px', border: `1px solid ${C.border}` },
   totalRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' },
   totalLabel: { fontSize: 14, color: '#4b5563' },
   totalVal: { fontSize: 14, fontWeight: 600, color: C.ink, fontVariantNumeric: 'tabular-nums' },
@@ -794,7 +794,7 @@ const doc = {
   footer: {
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
     background: '#1e293b', borderTop: `1px solid #0f172a`,
-    padding: `12px ${PAGE_PAD}px`,
+    padding: `20px ${PAGE_PAD}px`,
     fontSize: 12, color: '#94a3b8', textAlign: 'center',
     width: '100%',
     boxSizing: 'border-box',
