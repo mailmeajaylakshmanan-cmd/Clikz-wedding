@@ -414,6 +414,7 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
                 setForm(f => ({ ...f, customer: { _id: m._id, name: m.name, phone: m.phone, address: m.address || '' } }));
                 onCustomerSelect?.(m);
               }}
+              isDisabled={!!initial}
             />
           </Field>
 
