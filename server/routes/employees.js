@@ -7,7 +7,7 @@ const { secureFind, secureFindOne } = require('../utils/queryHelper');
 // GET all employees
 router.get('/', auth, async (req, res) => {
   try {
-    const employees = await secureFind(Employee, {}, req).sort({ name: 1 }).lean();
+    const employees = await secureFind(Employee, {}).sort({ name: 1 }).lean();
     res.json(employees);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -17,11 +17,11 @@ router.get('/', auth, async (req, res) => {
 // POST create employee
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, role, contact, phone, status } = req.body;
+    const { name, role, phone, status } = req.body;
     if (!name || !role) {
       return res.status(400).json({ message: 'Name and role are required' });
     }
-    const employee = new Employee({ name, role, contact: contact || phone, phone: phone || contact, status, studioId: req.studioId });
+    const employee = new Employee({ name, role, phone, status });
     await employee.save();
     res.status(201).json(employee);
   } catch (err) {
@@ -32,10 +32,10 @@ router.post('/', auth, async (req, res) => {
 // PUT update employee
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { name, role, contact, phone, status } = req.body;
-    const employee = await Employee.findOneAndUpdate(
-      { _id: req.params.id, studioId: req.studioId },
-      { name, role, contact: contact || phone, phone: phone || contact, status },
+    const { name, role, phone, status } = req.body;
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      { name, role, phone, status },
       { new: true, runValidators: true }
     );
     if (!employee) {
@@ -50,10 +50,10 @@ router.put('/:id', auth, async (req, res) => {
 // PATCH employee status
 router.patch('/:id/status', auth, async (req, res) => {
   try {
-    const { isActive } = req.body;
-    const employee = await Employee.findOneAndUpdate(
-      { _id: req.params.id, studioId: req.studioId },
-      { isActive },
+    const { status } = req.body;
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      { status },
       { new: true }
     );
     if (!employee) return res.status(404).json({ message: 'Employee not found' });

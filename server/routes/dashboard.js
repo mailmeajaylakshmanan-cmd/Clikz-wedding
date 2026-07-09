@@ -13,33 +13,25 @@ router.get('/', auth, async (req, res) => {
     const yearStart = new Date(todayStart.getFullYear(), 0, 1);
 
     const [totalInvoices, statusCounts, revenueData, todaysAssignments, monthlyData] = await Promise.all([
-      Invoice.countDocuments({ studioId: req.studioId, isDeleted: false }),
+      Invoice.countDocuments(),
       Invoice.aggregate([
-        { $match: { studioId: req.studioId, isDeleted: false } },
         { $group: { _id: '$status', count: { $sum: 1 } } }
       ]),
       Invoice.aggregate([
-        { $match: { studioId: req.studioId, isDeleted: false } },
         {
           $group: {
             _id: null,
             totalRevenue: { $sum: '$total' },
-            totalReceived: { $sum: '$advancePaid' }, // We'll add totalPaid below
             totalBalance: { $sum: '$balance' },
-            totalDiscount: { $sum: '$discount' },
-            sumTotalPaid: { $sum: '$totalPaid' },
-            sumAdvancePaid2: { $sum: '$advancePaid2' },
-            sumAdvancePaid3: { $sum: '$advancePaid3' }
+            totalDiscount: { $sum: '$discount' }
           },
         },
       ]),
       Invoice.countDocuments({
-        studioId: req.studioId,
-        isDeleted: false,
         eventDates: { $gte: todayStart, $lte: todayEnd }
       }),
       Invoice.aggregate([
-        { $match: { studioId: req.studioId, isDeleted: false, createdAt: { $type: 'date', $gte: yearStart } } },
+        { $match: { createdAt: { $type: 'date', $gte: yearStart } } },
         { $group: { _id: { $month: "$createdAt" }, revenue: { $sum: "$total" } } }
       ])
     ]);
@@ -47,11 +39,11 @@ router.get('/', auth, async (req, res) => {
     const statusMap = {};
     statusCounts.forEach(s => { statusMap[s._id] = s.count; });
 
-    const revenue = revenueData[0] || { totalRevenue: 0, totalReceived: 0, totalBalance: 0, totalDiscount: 0, sumTotalPaid: 0 };
-    revenue.totalReceived = (revenue.totalReceived || 0) + (revenue.sumTotalPaid || 0) + (revenue.sumAdvancePaid2 || 0) + (revenue.sumAdvancePaid3 || 0);
+    const revenue = revenueData[0] || { totalRevenue: 0, totalBalance: 0, totalDiscount: 0 };
+    revenue.totalReceived = revenue.totalRevenue - revenue.totalBalance;
 
     // 1. Pipeline Invoices (Recent 15)
-    const pipelineInvoices = await secureFind(Invoice, {}, req)
+    const pipelineInvoices = await secureFind(Invoice, {})
       .sort({ createdAt: -1 })
       .limit(15)
       .select('invoiceNo customer.name eventCategoryName total status eventDates createdAt')
@@ -63,56 +55,28 @@ router.get('/', auth, async (req, res) => {
         { eventDates: { $exists: true, $not: { $size: 0 } } },
         { eventDate: { $exists: true, $ne: '' } }
       ]
-    }, req)
+    })
       .sort({ 'eventDates': 1 })
       .select('customer.name location eventDate eventDates staffingStatus requiredStaff staffAllocated eventCategoryName')
       .lean();
 
     // 3. Recent Transactions (Generate a mock ledger feed from recent invoices that have payments)
     const txInvoices = await secureFind(Invoice, {
-      $or: [{ advancePaid: { $gt: 0 } }, { advancePaid2: { $gt: 0 } }, { advancePaid3: { $gt: 0 } }, { totalPaid: { $gt: 0 } }]
-    }, req).sort({ updatedAt: -1 }).limit(10).lean();
+      'payments.0': { $exists: true }
+    }).sort({ updatedAt: -1 }).limit(10).lean();
 
     const recentPayments = [];
     txInvoices.forEach(inv => {
-      if (inv.advancePaid > 0) {
-        recentPayments.push({
-          id: `${inv._id}_adv`,
-          type: 'income',
-          amount: inv.advancePaid,
-          description: `${inv.customer.name} 1st Advance (${inv.advancePaymentMethod})`,
-          date: new Date(inv.updatedAt).toLocaleDateString(),
-          category: inv.eventCategoryName || 'Service'
-        });
-      }
-      if (inv.advancePaid2 > 0) {
-        recentPayments.push({
-          id: `${inv._id}_adv2`,
-          type: 'income',
-          amount: inv.advancePaid2,
-          description: `${inv.customer.name} 2nd Advance (${inv.advancePaymentMethod2})`,
-          date: new Date(inv.updatedAt).toLocaleDateString(),
-          category: inv.eventCategoryName || 'Service'
-        });
-      }
-      if (inv.advancePaid3 > 0) {
-        recentPayments.push({
-          id: `${inv._id}_adv3`,
-          type: 'income',
-          amount: inv.advancePaid3,
-          description: `${inv.customer.name} 3rd Advance (${inv.advancePaymentMethod3})`,
-          date: new Date(inv.updatedAt).toLocaleDateString(),
-          category: inv.eventCategoryName || 'Service'
-        });
-      }
-      if (inv.totalPaid > 0) {
-        recentPayments.push({
-          id: `${inv._id}_fin`,
-          type: 'income',
-          amount: inv.totalPaid,
-          description: `${inv.customer.name} Final Payment (${inv.totalPaymentMethod})`,
-          date: new Date(inv.updatedAt).toLocaleDateString(),
-          category: inv.eventCategoryName || 'Service'
+      if (inv.payments && inv.payments.length > 0) {
+        inv.payments.forEach((payment, idx) => {
+          recentPayments.push({
+            id: `${inv._id}_pay_${idx}`,
+            type: 'income',
+            amount: payment.amount,
+            description: `${inv.customer?.name} - ${payment.type || 'Payment'} (${payment.method})`,
+            date: new Date(payment.date || inv.updatedAt).toLocaleDateString(),
+            category: inv.eventCategoryName || 'Service'
+          });
         });
       }
     });

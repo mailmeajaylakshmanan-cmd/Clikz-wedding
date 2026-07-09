@@ -9,12 +9,12 @@ const { secureFind, secureFindOne } = require('../utils/queryHelper');
 router.get('/', auth, async (req, res) => {
   try {
     // 1. Fetch all active invoices (only need basic info for the board)
-    const invoices = await secureFind(Invoice, {}, req)
+    const invoices = await secureFind(Invoice, {})
       .select('invoiceNo customer event eventCategoryName date eventDate location status')
       .lean();
 
     // 2. Fetch all operations
-    let operations = await secureFind(Operations, {}, req).lean();
+    let operations = await secureFind(Operations, {}).lean();
     const opsByInvoiceId = new Map(operations.map(op => [op.invoice.toString(), op]));
 
     // 3. Auto-sync: Create missing operations
@@ -26,7 +26,7 @@ router.get('/', auth, async (req, res) => {
       if (!opsByInvoiceId.has(invIdStr)) {
         // Create new operations document for this invoice
         const newOp = {
-          studioId: req.studioId,
+
           invoice: inv._id,
           stage: 'To-Do',
           advanceCleared: false,
@@ -69,7 +69,7 @@ router.get('/', auth, async (req, res) => {
 // GET single operation by invoiceId
 router.get('/:invoiceId', auth, async (req, res) => {
   try {
-    let op = await secureFindOne(Operations, { invoice: req.params.invoiceId }, req);
+    let op = await secureFindOne(Operations, { invoice: req.params.invoiceId });
     if (!op) {
       return res.status(404).json({ message: 'Operation not found for this invoice' });
     }
@@ -85,11 +85,10 @@ router.patch('/:invoiceId', auth, async (req, res) => {
     const { invoiceId } = req.params;
     const updates = req.body;
     
-    let op = await secureFindOne(Operations, { invoice: invoiceId }, req);
+    let op = await secureFindOne(Operations, { invoice: invoiceId });
     if (!op) {
       // Create if it somehow doesn't exist
       op = new Operations({
-        studioId: req.studioId,
         invoice: invoiceId,
         ...updates
       });

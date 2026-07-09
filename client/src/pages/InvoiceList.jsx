@@ -283,10 +283,17 @@ export default function InvoiceList() {
                 {[
                   { label: 'Subtotal',             value: fmt(selectedInv.subTotal) },
                   { label: 'Discount',             value: '-' + fmt(selectedInv.discount) },
-                  { label: '1st Advance',          value: fmt(selectedInv.advancePaid),  sub: selectedInv.advancePaid  > 0 ? `${selectedInv.advancePaymentDate || '—'}  · ${selectedInv.advancePaymentMethod || 'Cash'}` : null },
-                  { label: '2nd Advance',          value: fmt(selectedInv.advancePaid2), sub: selectedInv.advancePaid2 > 0 ? `${selectedInv.advancePaymentDate2 || '—'} · ${selectedInv.advancePaymentMethod2 || 'Cash'}` : null },
-                  { label: '3rd Advance',          value: fmt(selectedInv.advancePaid3), sub: selectedInv.advancePaid3 > 0 ? `${selectedInv.advancePaymentDate3 || '—'} · ${selectedInv.advancePaymentMethod3 || 'Cash'}` : null },
-                  { label: 'Final Settlement',     value: fmt(selectedInv.totalPaid),    sub: selectedInv.totalPaid    > 0 ? `${selectedInv.totalPaymentDate || '—'} · ${selectedInv.totalPaymentMethod || 'Cash'}` : null },
+                  ...((selectedInv.payments || []).map(p => ({
+                    label: p.type || 'Payment',
+                    value: fmt(p.amount),
+                    sub: `${p.date ? (typeof p.date === 'string' ? p.date.substring(0,10) : new Date(p.date).toISOString().substring(0,10)) : '—'} · ${p.method || 'Cash'}`
+                  }))),
+                  ...(!(selectedInv.payments && selectedInv.payments.length > 0) ? [
+                    { label: '1st Advance',          value: fmt(selectedInv.advancePaid),  sub: selectedInv.advancePaid  > 0 ? `${selectedInv.advancePaymentDate || '—'}  · ${selectedInv.advancePaymentMethod || 'Cash'}` : null },
+                    { label: '2nd Advance',          value: fmt(selectedInv.advancePaid2), sub: selectedInv.advancePaid2 > 0 ? `${selectedInv.advancePaymentDate2 || '—'} · ${selectedInv.advancePaymentMethod2 || 'Cash'}` : null },
+                    { label: '3rd Advance',          value: fmt(selectedInv.advancePaid3), sub: selectedInv.advancePaid3 > 0 ? `${selectedInv.advancePaymentDate3 || '—'} · ${selectedInv.advancePaymentMethod3 || 'Cash'}` : null },
+                    { label: 'Final Settlement',     value: fmt(selectedInv.totalPaid),    sub: selectedInv.totalPaid    > 0 ? `${selectedInv.totalPaymentDate || '—'} · ${selectedInv.totalPaymentMethod || 'Cash'}` : null },
+                  ] : [])
                 ].map((row, i) => (
                   <div key={i} className="flex justify-between items-start p-3 bg-slate-50/30">
                     <div>

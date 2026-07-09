@@ -3,6 +3,24 @@ const router = express.Router();
 const Invoice = require('../models/Invoice');
 const auth = require('../middleware/auth');
 const { secureFind, secureFindOne } = require('../utils/queryHelper');
+const Customer = require('../models/Customer');
+
+async function syncCustomerStats(phone) {
+  if (!phone) return;
+  const invoices = await Invoice.find({ 'customer.phone': phone });
+  const totalInvoices = invoices.length;
+  const totalBalance = invoices.reduce((sum, inv) => sum + (inv.balance || 0), 0);
+  const totalPaid = invoices.reduce((sum, inv) => {
+    const paid = inv.payments ? inv.payments.reduce((s, p) => s + (Number(p.amount) || 0), 0) : 0;
+    return sum + (paid || Number(inv.advancePaid) || 0);
+  }, 0);
+
+  await Customer.findOneAndUpdate(
+    { phone },
+    { $set: { totalInvoices, totalPaid, totalBalance } },
+    { upsert: false }
+  );
+}
 
 // Helper to launch browser correctly in both local and Serverless/Vercel environments
 async function launchBrowser() {
@@ -48,12 +66,12 @@ router.get('/', auth, async (req, res) => {
         { 'customer.phone': { $regex: search, $options: 'i' } },
       ];
     }
-    const invoices = await secureFind(Invoice, query, req)
+    const invoices = await secureFind(Invoice, query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
       .lean();
-    const total = await Invoice.countDocuments({ ...query, studioId: req.studioId, isDeleted: false });
+    const total = await Invoice.countDocuments(query);
     res.json({ invoices, total, pages: Math.ceil(total / limit) });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -63,7 +81,7 @@ router.get('/', auth, async (req, res) => {
 // GET single invoice
 router.get('/:id', auth, async (req, res) => {
   try {
-    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req).populate('eventCategories').lean();
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id }).populate('eventCategories').lean();
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     res.json(invoice);
   } catch (err) {
@@ -97,7 +115,7 @@ router.get('/test/pdf', async (req, res) => {
 // GET generate invoice PDF
 router.get('/:id/pdf', auth, async (req, res) => {
   try {
-    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req);
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
 
     // Ensure frontend URL is known
@@ -154,7 +172,7 @@ router.get('/:id/pdf', auth, async (req, res) => {
 // GET generate quotation PDF
 router.get('/:id/quotation/pdf', auth, async (req, res) => {
   try {
-    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req);
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id });
     if (!invoice) return res.status(404).json({ message: 'Quotation not found' });
 
     let frontendUrl = req.headers.origin || 'http://localhost:5173';
@@ -189,8 +207,11 @@ router.get('/:id/quotation/pdf', auth, async (req, res) => {
 // POST create invoice
 router.post('/', auth, async (req, res) => {
   try {
-    const invoice = new Invoice({ ...req.body, studioId: req.studioId });
+    const invoice = new Invoice(req.body);
     await invoice.save();
+    if (invoice.customer && invoice.customer.phone) {
+      await syncCustomerStats(invoice.customer.phone);
+    }
     res.status(201).json(invoice);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -200,13 +221,21 @@ router.post('/', auth, async (req, res) => {
 // PUT update invoice
 router.put('/:id', auth, async (req, res) => {
   try {
-    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req);
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+    
+    const oldPhone = invoice.customer?.phone;
     
     // Assign fields
     Object.assign(invoice, req.body);
     
     await invoice.save();
+    
+    if (oldPhone) await syncCustomerStats(oldPhone);
+    if (invoice.customer?.phone && invoice.customer.phone !== oldPhone) {
+      await syncCustomerStats(invoice.customer.phone);
+    }
+    
     res.json(invoice);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -217,11 +246,14 @@ router.put('/:id', auth, async (req, res) => {
 router.patch('/:id/status', auth, async (req, res) => {
   try {
     const { status } = req.body;
-    const invoice = await secureFindOne(Invoice, { _id: req.params.id }, req);
+    const invoice = await secureFindOne(Invoice, { _id: req.params.id });
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
     
     invoice.status = status;
     await invoice.save();
+    if (invoice.customer?.phone) {
+      await syncCustomerStats(invoice.customer.phone);
+    }
     res.json(invoice);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -231,7 +263,11 @@ router.patch('/:id/status', auth, async (req, res) => {
 // DELETE invoice
 router.delete('/:id', auth, async (req, res) => {
   try {
-    await Invoice.findOneAndDelete({ _id: req.params.id, studioId: req.studioId });
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
+    const phone = invoice.customer?.phone;
+    await Invoice.findByIdAndDelete(req.params.id);
+    if (phone) await syncCustomerStats(phone);
     res.json({ message: 'Invoice deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });

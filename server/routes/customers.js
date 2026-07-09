@@ -23,12 +23,12 @@ router.get('/', auth, async (req, res) => {
             }
           }
         },
-        { $match: { studioId: req.studioId, isDeleted: false } },
+
         { $limit: 10000 },
         { $sort: { name: 1 } }
       ]);
     } else {
-      customers = await secureFind(Customer, {}, req).sort({ name: 1 }).lean();
+      customers = await secureFind(Customer, {}).sort({ name: 1 }).lean();
     }
 
     // Dynamically calculate bookings based on invoices
@@ -36,7 +36,7 @@ router.get('/', auth, async (req, res) => {
     const phones = customers.map(c => c.phone);
     
     const invoiceCounts = await Invoice.aggregate([
-      { $match: { 'customer.phone': { $in: phones }, studioId: req.studioId, isDeleted: false } },
+      { $match: { 'customer.phone': { $in: phones } } },
       { $group: { _id: '$customer.phone', count: { $sum: 1 } } }
     ]);
 
@@ -59,9 +59,9 @@ router.get('/', auth, async (req, res) => {
 // POST create customer
 router.post('/', auth, async (req, res) => {
   try {
-    const existing = await secureFindOne(Customer, { phone: req.body.phone }, req).lean();
+    const existing = await secureFindOne(Customer, { phone: req.body.phone }).lean();
     if (existing) return res.status(400).json({ message: 'Customer with this phone already exists' });
-    const customer = new Customer({ ...req.body, studioId: req.studioId });
+    const customer = new Customer(req.body);
     await customer.save();
     res.status(201).json(customer);
   } catch (err) {
@@ -72,8 +72,8 @@ router.post('/', auth, async (req, res) => {
 // PUT update customer
 router.put('/:id', auth, async (req, res) => {
   try {
-    const customer = await Customer.findOneAndUpdate(
-      { _id: req.params.id, studioId: req.studioId },
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id,
       req.body,
       { new: true }
     );
@@ -88,8 +88,8 @@ router.put('/:id', auth, async (req, res) => {
 router.patch('/:id/status', auth, async (req, res) => {
   try {
     const { isActive } = req.body;
-    const customer = await Customer.findOneAndUpdate(
-      { _id: req.params.id, studioId: req.studioId },
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id,
       { isActive },
       { new: true }
     );

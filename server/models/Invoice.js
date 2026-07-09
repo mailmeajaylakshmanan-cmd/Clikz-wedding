@@ -19,8 +19,6 @@ function parseDateString(str) {
 }
 
 const invoiceSchema = new mongoose.Schema({
-  studioId: { type: String, required: true, default: 'default_studio' },
-  isDeleted: { type: Boolean, default: false },
   invoiceNo: { type: String, required: true },
   date: { type: Date, default: Date.now },
   customer: {
@@ -44,18 +42,12 @@ const invoiceSchema = new mongoose.Schema({
   subTotal: { type: Number, default: 0 },
   discount: { type: Number, default: 0 },
   total: { type: Number, default: 0 },
-  advancePaid: { type: Number, default: 0 },
-  advancePaymentDate: { type: String, default: '' },
-  advancePaymentMethod: { type: String, default: 'Cash' },
-  advancePaid2: { type: Number, default: 0 },
-  advancePaymentDate2: { type: String, default: '' },
-  advancePaymentMethod2: { type: String, default: 'Cash' },
-  advancePaid3: { type: Number, default: 0 },
-  advancePaymentDate3: { type: String, default: '' },
-  advancePaymentMethod3: { type: String, default: 'Cash' },
-  totalPaid: { type: Number, default: 0 },
-  totalPaymentDate: { type: String, default: '' },
-  totalPaymentMethod: { type: String, default: 'Cash' },
+  payments: [{
+    amount: { type: Number, required: true },
+    date: { type: Date, default: Date.now },
+    method: { type: String, enum: ['UPI', 'Cash', 'Bank Transfer'], default: 'Cash' },
+    type: { type: String, default: 'Advance' }
+  }],
   balance: { type: Number, default: 0 },
   status: {
     type: String,
@@ -79,7 +71,7 @@ const invoiceSchema = new mongoose.Schema({
 // Auto-generate invoice number and update staffing status before validation
 invoiceSchema.pre('validate', async function (next) {
   if (!this.invoiceNo) {
-    const lastInvoice = await mongoose.model('Invoice').findOne({ studioId: this.studioId }).sort({ createdAt: -1 });
+    const lastInvoice = await mongoose.model('Invoice').findOne().sort({ createdAt: -1 });
     let nextNumber = 1;
     if (lastInvoice && lastInvoice.invoiceNo && lastInvoice.invoiceNo.startsWith('CWF-')) {
       const lastNumber = parseInt(lastInvoice.invoiceNo.replace('CWF-', ''), 10);
@@ -110,7 +102,8 @@ invoiceSchema.pre('validate', async function (next) {
   }
 
   // Calculate and update balance
-  this.balance = this.total - (this.advancePaid || 0) - (this.advancePaid2 || 0) - (this.advancePaid3 || 0) - (this.totalPaid || 0);
+  const totalPaidAmount = this.payments ? this.payments.reduce((sum, payment) => sum + (payment.amount || 0), 0) : 0;
+  this.balance = this.total - totalPaidAmount;
 
   // Auto-resolve status based on balance
   if (this.total > 0) {
@@ -126,17 +119,9 @@ invoiceSchema.pre('validate', async function (next) {
   next();
 });
 
-invoiceSchema.index({ studioId: 1, invoiceNo: 1 }, { unique: true });
+invoiceSchema.index({ invoiceNo: 1 }, { unique: true });
 invoiceSchema.index({ status: 1, createdAt: -1, 'customer.name': 1, invoiceNo: 1 });
-invoiceSchema.index({ studioId: 1, eventDates: 1 });
+invoiceSchema.index({ eventDates: 1 });
 invoiceSchema.index({ 'staffAllocated.employeeId': 1 });
-
-invoiceSchema.pre('find', function () {
-  this.where({ isDeleted: { $ne: true } });
-});
-
-invoiceSchema.pre('findOne', function () {
-  this.where({ isDeleted: { $ne: true } });
-});
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

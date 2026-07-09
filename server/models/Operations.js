@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 const operationsSchema = new mongoose.Schema({
-  studioId: { type: String, required: true, default: 'default_studio' },
   invoice: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice', required: true, unique: true },
   
   // Kanban Stage
@@ -29,6 +28,6 @@ const operationsSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-operationsSchema.index({ studioId: 1, stage: 1 });
+operationsSchema.index({ stage: 1 });
 
 module.exports = mongoose.model('Operations', operationsSchema);

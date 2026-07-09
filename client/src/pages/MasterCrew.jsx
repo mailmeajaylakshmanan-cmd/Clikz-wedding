@@ -16,7 +16,7 @@ export default function MasterCrew() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState('Lead Photographer');
-  const [contact, setContact] = useState('');
+  const [phone, setPhone] = useState('');
   const [status, setStatus] = useState('Active');
   const [editId, setEditId] = useState(null);
   
@@ -26,7 +26,7 @@ export default function MasterCrew() {
     e.preventDefault();
     if (!name || !role) return toast.error('Name and Role are required');
     
-    const payload = { name, role, contact, status };
+    const payload = { name, role, phone, status };
     
     try {
       if (editId) {
@@ -47,7 +47,7 @@ export default function MasterCrew() {
     setEditId(null);
     setName('');
     setRole('Lead Photographer');
-    setContact('');
+    setPhone('');
     setStatus('Active');
     setIsModalOpen(true);
   }
@@ -56,7 +56,7 @@ export default function MasterCrew() {
     setEditId(member._id);
     setName(member.name);
     setRole(member.role);
-    setContact(member.contact || member.phone || '');
+    setPhone(member.phone || member.contact || '');
     setStatus(member.status || 'Active');
     setIsModalOpen(true);
   }
@@ -65,15 +65,14 @@ export default function MasterCrew() {
     setEditId(null);
     setName('');
     setRole('Lead Photographer');
-    setContact('');
+    setPhone('');
     setStatus('Active');
     setIsModalOpen(false);
   }
 
   async function handleStatusChange(id, newStatusStr) {
-    const isActive = newStatusStr === 'Active';
     try {
-      await api.patch(`/employees/${id}/status`, { isActive });
+      await api.patch(`/employees/${id}/status`, { status: newStatusStr });
       toast.success(`Crew marked ${newStatusStr}`);
       queryClient.invalidateQueries({ queryKey: ['employees'] });
     } catch (err) {
@@ -85,8 +84,8 @@ export default function MasterCrew() {
     return employees.filter(c => 
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.contact && c.contact.includes(searchQuery)) ||
-      (c.phone && c.phone.includes(searchQuery))
+      (c.phone && c.phone.includes(searchQuery)) ||
+      (c.contact && c.contact.includes(searchQuery))
     );
   }, [employees, searchQuery]);
 
@@ -138,7 +137,7 @@ export default function MasterCrew() {
 
         {filteredEmployees.map(member => {
           const { initials, bgClass } = getAvatarInfo(member.name, member._id);
-          const active = member.isActive !== false;
+          const active = member.status === 'Active';
 
           const statusStyle = member.status === 'Active'
             ? 'bg-emerald-50 text-emerald-600'
@@ -159,7 +158,7 @@ export default function MasterCrew() {
                 <p className="font-semibold text-slate-900 text-sm truncate">{member.name}</p>
                 <p className="text-xs text-slate-400 mt-0.5 truncate">
                   {member.role}
-                  {(member.contact || member.phone) ? ' · ' + (member.contact || member.phone) : ''}
+                  {(member.phone || member.contact) ? ' · ' + (member.phone || member.contact) : ''}
                 </p>
               </div>
 
@@ -228,8 +227,8 @@ export default function MasterCrew() {
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 pl-1">Phone / Contact</label>
                   <input
                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-slate-50 focus:bg-white text-slate-800 font-semibold transition-all"
-                    value={contact}
-                    onChange={e => setContact(e.target.value)}
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
                     placeholder="Phone Number (optional)"
                   />
                 </div>

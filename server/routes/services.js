@@ -12,7 +12,7 @@ router.get('/', auth, async (req, res) => {
     } else if (req.query.category) {
       query.category = req.query.category;
     }
-    const services = await secureFind(Service, query, req)
+    const services = await secureFind(Service, query)
       .populate('category', 'name showTerms')
       .sort({ name: 1 })
       .lean();
@@ -24,9 +24,9 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const service = new Service({ ...req.body, studioId: req.studioId });
+    const service = new Service(req.body);
     await service.save();
-    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('category', 'name showTerms').lean();
+    const populated = await secureFindOne(Service, { _id: service._id }).populate('category', 'name showTerms').lean();
     res.status(201).json(populated);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -35,13 +35,13 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
   try {
-    const service = await Service.findOneAndUpdate(
-      { _id: req.params.id, studioId: req.studioId },
+    const service = await Service.findByIdAndUpdate(
+      req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
     if (!service) return res.status(404).json({ message: 'Service not found' });
-    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('category', 'name showTerms').lean();
+    const populated = await secureFindOne(Service, { _id: service._id }).populate('category', 'name showTerms').lean();
     res.json(populated);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -51,13 +51,13 @@ router.put('/:id', auth, async (req, res) => {
 router.patch('/:id/status', auth, async (req, res) => {
   try {
     const { isActive } = req.body;
-    const service = await Service.findOneAndUpdate(
-      { _id: req.params.id, studioId: req.studioId },
+    const service = await Service.findByIdAndUpdate(
+      req.params.id,
       { isActive },
       { new: true }
     );
     if (!service) return res.status(404).json({ message: 'Service not found' });
-    const populated = await secureFindOne(Service, { _id: service._id }, req).populate('category', 'name showTerms').lean();
+    const populated = await secureFindOne(Service, { _id: service._id }).populate('category', 'name showTerms').lean();
     res.json(populated);
   } catch (err) {
     res.status(500).json({ message: err.message });

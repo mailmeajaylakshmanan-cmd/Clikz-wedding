@@ -7,7 +7,7 @@ const { secureFind, secureFindOne } = require('../utils/queryHelper');
 
 router.get('/', auth, async (req, res) => {
   try {
-    const categories = await secureFind(EventCategory, {}, req).sort({ name: 1 }).lean();
+    const categories = await secureFind(EventCategory, {}).sort({ name: 1 }).lean();
     res.json(categories);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -16,7 +16,7 @@ router.get('/', auth, async (req, res) => {
 
 router.post('/', auth, async (req, res) => {
   try {
-    const category = new EventCategory({ ...req.body, studioId: req.studioId });
+    const category = new EventCategory(req.body);
     await category.save();
     res.status(201).json(category);
   } catch (err) {
@@ -26,8 +26,8 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
   try {
-    const category = await EventCategory.findOneAndUpdate(
-      { _id: req.params.id, studioId: req.studioId },
+    const category = await EventCategory.findByIdAndUpdate(
+      req.params.id,
       req.body,
       { new: true, runValidators: true }
     );
@@ -41,8 +41,8 @@ router.put('/:id', auth, async (req, res) => {
 router.patch('/:id/status', auth, async (req, res) => {
   try {
     const { isActive } = req.body;
-    const category = await EventCategory.findOneAndUpdate(
-      { _id: req.params.id, studioId: req.studioId },
+    const category = await EventCategory.findByIdAndUpdate(
+      req.params.id,
       { isActive },
       { new: true }
     );

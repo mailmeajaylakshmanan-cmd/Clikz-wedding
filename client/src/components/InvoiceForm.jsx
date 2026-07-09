@@ -207,6 +207,11 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       assignedDeliverables: [],
     };
     if (!initial) return base;
+    const p1 = (initial.payments || []).find(p => p.type === '1st Advance') || (initial.payments || [])[0] || {};
+    const p2 = (initial.payments || []).find(p => p.type === '2nd Advance') || (initial.payments || [])[1] || {};
+    const p3 = (initial.payments || []).find(p => p.type === '3rd Advance') || (initial.payments || [])[2] || {};
+    const pf = (initial.payments || []).find(p => p.type === 'Final Settlement') || (initial.payments || [])[3] || {};
+
     return {
       ...base, ...initial,
       eventCategories: initial.eventCategories?.map(c => c._id || c) ||
@@ -216,10 +221,14 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       assignedDeliverables: initial.assignedDeliverables || [],
       subTotal: initial.subTotal || 0,
       requiredStaff: initial.requiredStaff || 0,
-      showAdvance: Number(initial.advancePaid) > 0,
-      showAdvance2: Number(initial.advancePaid2) > 0,
-      showAdvance3: Number(initial.advancePaid3) > 0,
-      showFinal: Number(initial.totalPaid) > 0,
+      advancePaid: p1.amount || 0, advancePaymentDate: p1.date ? (typeof p1.date === 'string' ? p1.date.substring(0,10) : new Date(p1.date).toISOString().substring(0,10)) : today, advancePaymentMethod: p1.method || 'Cash',
+      advancePaid2: p2.amount || 0, advancePaymentDate2: p2.date ? (typeof p2.date === 'string' ? p2.date.substring(0,10) : new Date(p2.date).toISOString().substring(0,10)) : today, advancePaymentMethod2: p2.method || 'Cash',
+      advancePaid3: p3.amount || 0, advancePaymentDate3: p3.date ? (typeof p3.date === 'string' ? p3.date.substring(0,10) : new Date(p3.date).toISOString().substring(0,10)) : today, advancePaymentMethod3: p3.method || 'Cash',
+      totalPaid: pf.amount || 0, totalPaymentDate: pf.date ? (typeof pf.date === 'string' ? pf.date.substring(0,10) : new Date(pf.date).toISOString().substring(0,10)) : today, totalPaymentMethod: pf.method || 'Cash',
+      showAdvance: Number(p1.amount || 0) > 0,
+      showAdvance2: Number(p2.amount || 0) > 0,
+      showAdvance3: Number(p3.amount || 0) > 0,
+      showFinal: Number(pf.amount || 0) > 0,
     };
   });
 
@@ -343,8 +352,15 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     const cats = eventCategories.filter(c => form.eventCategories.includes(c._id));
     const terms = cats.filter(c => c.showTerms).map(c => c.termsAndConditions).filter(Boolean).join('\n\n');
     const showTerms = cats.some(c => c.showTerms);
+    
+    const payments = [];
+    if (form.showAdvance && Number(form.advancePaid) > 0) payments.push({ amount: Number(form.advancePaid), date: form.advancePaymentDate, method: form.advancePaymentMethod, type: '1st Advance' });
+    if (form.showAdvance2 && Number(form.advancePaid2) > 0) payments.push({ amount: Number(form.advancePaid2), date: form.advancePaymentDate2, method: form.advancePaymentMethod2, type: '2nd Advance' });
+    if (form.showAdvance3 && Number(form.advancePaid3) > 0) payments.push({ amount: Number(form.advancePaid3), date: form.advancePaymentDate3, method: form.advancePaymentMethod3, type: '3rd Advance' });
+    if (form.showFinal && Number(form.totalPaid) > 0) payments.push({ amount: Number(form.totalPaid), date: form.totalPaymentDate, method: form.totalPaymentMethod, type: 'Final Settlement' });
+
     onSubmit({
-      ...form, subTotal, total, balance,
+      ...form, subTotal, total, balance, payments,
       eventCategories: form.eventCategories,
       eventCategoryName: cats.map(c => c.name).join(', ') || form.event,
       showTerms, termsAndConditions: showTerms ? terms : '',
