@@ -362,7 +362,7 @@ export default function QuotationView() {
               </div>
               <div style={doc.premiumDivider} />
               <div style={doc.totalRowCentered}>
-                <span style={doc.premiumTotalVal}>₹ {fmt(quotation.total)}</span>
+                <span style={doc.premiumTotalVal}>{fmt(quotation.total)}</span>
               </div>
             </div>
           </div>
