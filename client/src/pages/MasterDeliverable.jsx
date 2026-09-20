@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
-import { Plus, Edit3, X, Search, Package } from 'lucide-react';
+import { Plus, Edit3, Trash2, X, Search, Package } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function MasterDeliverable() {
   const queryClient = useQueryClient();
-  
+
   const { data: deliverables = [], isLoading: loading } = useQuery({
     queryKey: ['deliverablesData'],
     queryFn: async () => {
@@ -19,7 +19,7 @@ export default function MasterDeliverable() {
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 7;
+  const ITEMS_PER_PAGE = 12;
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,8 +31,8 @@ export default function MasterDeliverable() {
     let filtered = deliverables;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      filtered = filtered.filter(d => 
-        d.name.toLowerCase().includes(q) || 
+      filtered = filtered.filter(d =>
+        d.name.toLowerCase().includes(q) ||
         (d.description && d.description.toLowerCase().includes(q))
       );
     }
@@ -45,7 +45,7 @@ export default function MasterDeliverable() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!name) return toast.error('Name is required');
-    
+
     try {
       if (editId) {
         await api.put(`/deliverables/${editId}`, { name, description });
@@ -102,7 +102,7 @@ export default function MasterDeliverable() {
   };
 
   return (
-    <div className="space-y-5 max-w-[1200px] mx-auto pb-20 font-sans">
+    <div className="space-y-4 max-w-[1200px] mx-auto pb-20 font-sans">
       {/* Header */}
       <header className="flex flex-row justify-between items-center gap-3">
         <div>
@@ -127,54 +127,71 @@ export default function MasterDeliverable() {
           placeholder="Search by name or description…"
           value={searchQuery}
           onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-          className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all text-slate-700"
+          className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all text-slate-700 shadow-sm"
         />
       </div>
 
-      {/* Card list */}
-      <div className="space-y-2">
-        {loading && <div className="text-center py-10 text-slate-400 text-sm">Loading deliverables…</div>}
-        {!loading && paginatedDeliverables.length === 0 && (
-          <div className="text-center py-10 text-slate-400 text-sm">No deliverables match your search.</div>
-        )}
+      {/* Compact Cards Grid */}
+      {loading && <div className="text-center py-10 text-slate-400 text-sm">Loading deliverables…</div>}
+      {!loading && paginatedDeliverables.length === 0 && (
+        <div className="text-center py-10 text-slate-400 text-sm">No deliverables match your search.</div>
+      )}
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {paginatedDeliverables.map(deliverable => {
-          const { initials, bgClass } = getAvatarInfo(deliverable.name, deliverable._id);
-          
-          return (
-            <div key={deliverable._id}
-              className="bg-white rounded-xl border border-slate-100 shadow-sm p-3 flex items-center gap-3 hover:shadow-md hover:border-orange-100 transition-all group"
-            >
-              {/* Avatar / Icon */}
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-slate-700 shrink-0 ${bgClass}`}>
-                <Package size={18} className="opacity-80" />
-              </div>
+          const { bgClass } = getAvatarInfo(deliverable.name, deliverable._id);
 
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-slate-900 text-sm truncate">{deliverable.name}</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  {deliverable.description && (
-                    <span className="text-xs text-slate-500 truncate">{deliverable.description}</span>
-                  )}
-                  {deliverable.createdAt && (
-                    <>
-                      {deliverable.description && <span className="text-slate-300 text-[10px]">●</span>}
-                      <span className="text-xs text-slate-400 whitespace-nowrap">
-                        Added {new Date(deliverable.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          return (
+            <div
+              key={deliverable._id}
+              className="bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all p-3 flex items-center justify-between gap-3 group"
+            >
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-slate-700 shrink-0 ${bgClass}`}>
+                  <Package size={17} className="opacity-80" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-slate-900 text-xs sm:text-sm truncate leading-tight" title={deliverable.name}>
+                    {deliverable.name}
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
+                    {deliverable.description ? (
+                      <span className="text-slate-500 truncate max-w-[130px] sm:max-w-[170px]" title={deliverable.description}>
+                        {deliverable.description}
                       </span>
-                    </>
-                  )}
+                    ) : (
+                      <span className="text-slate-400 italic">Item</span>
+                    )}
+                    {deliverable.createdAt && (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span className="whitespace-nowrap">
+                          {new Date(deliverable.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleEdit(deliverable)} className="p-1.5 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleEdit(deliverable)}
+                  title="Edit Deliverable"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                >
                   <Edit3 size={15} />
                 </button>
-                <button onClick={() => handleDelete(deliverable._id)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                  <X size={15} />
+                <button
+                  type="button"
+                  onClick={() => handleDelete(deliverable._id)}
+                  title="Delete Deliverable"
+                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 size={15} />
                 </button>
               </div>
             </div>
@@ -196,9 +213,8 @@ export default function MasterDeliverable() {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${
-                currentPage === page ? 'bg-orange-500 text-white font-bold' : 'hover:bg-slate-100 text-slate-500'
-              }`}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors ${currentPage === page ? 'bg-orange-500 text-white font-bold' : 'hover:bg-slate-100 text-slate-500'
+                }`}
             >
               {page}
             </button>
@@ -248,20 +264,37 @@ export default function MasterDeliverable() {
                 </div>
               </div>
 
-              <div className="px-6 py-5 border-t border-slate-100 flex gap-3 justify-end bg-slate-50/50">
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="bg-white hover:bg-slate-100 text-slate-600 font-bold px-6 py-2.5 rounded-xl border border-slate-200 transition-colors text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-2.5 rounded-xl transition-all shadow-md shadow-orange-200 text-sm"
-                >
-                  {editId ? 'Update Deliverable' : 'Save Deliverable'}
-                </button>
+              <div className="px-6 py-5 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                {editId ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const idToDelete = editId;
+                      handleCancelEdit();
+                      handleDelete(idToDelete);
+                    }}
+                    className="flex items-center gap-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-xl text-xs font-semibold transition-colors"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                ) : <div />}
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="bg-white hover:bg-slate-100 text-slate-600 font-bold px-5 py-2.5 rounded-xl border border-slate-200 transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-md shadow-orange-200 text-sm"
+                  >
+                    {editId ? 'Update Deliverable' : 'Save Deliverable'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

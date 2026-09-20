@@ -89,29 +89,6 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-// TEST GET generate invoice PDF (no auth)
-router.get('/test/pdf', async (req, res) => {
-  try {
-    const browser = await launchBrowser();
-    const page = await browser.newPage();
-    // Test a reliable public URL to isolate browser issues from application issues
-    await page.goto('https://example.com', { waitUntil: 'networkidle2', timeout: 30000 });
-    const pdfBuffer = await page.pdf({ format: 'A4' });
-    await browser.close();
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Length': pdfBuffer.length
-    });
-    res.send(pdfBuffer);
-  } catch (err) {
-    res.status(500).json({ 
-      message: 'Failed to generate PDF', 
-      error: err.message, 
-      stack: err.stack 
-    });
-  }
-});
-
 // GET generate invoice PDF
 router.get('/:id/pdf', auth, async (req, res) => {
   try {
