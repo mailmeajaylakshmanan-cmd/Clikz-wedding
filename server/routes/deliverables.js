@@ -7,7 +7,11 @@ const { secureFind, secureFindOne } = require('../utils/queryHelper');
 // GET all deliverables
 router.get('/', auth, async (req, res) => {
   try {
-    const deliverables = await secureFind(Deliverable, {}).sort({ name: 1 });
+    const query = {};
+    if (req.query.activeOnly === 'true') {
+      query.isActive = { $ne: false };
+    }
+    const deliverables = await secureFind(Deliverable, query).sort({ name: 1 });
     res.json(deliverables);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -36,6 +40,22 @@ router.put('/:id', auth, async (req, res) => {
     res.json(deliverable);
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+
+// PATCH status
+router.patch('/:id/status', auth, async (req, res) => {
+  try {
+    const { isActive } = req.body;
+    const deliverable = await Deliverable.findByIdAndUpdate(
+      req.params.id,
+      { isActive },
+      { new: true }
+    );
+    if (!deliverable) return res.status(404).json({ message: 'Deliverable not found' });
+    res.json(deliverable);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 });
 

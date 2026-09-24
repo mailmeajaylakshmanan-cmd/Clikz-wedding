@@ -5,6 +5,9 @@ const serviceLineSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   price: { type: Number, default: 0 },
   total: { type: Number, default: 0 },
+  serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
+  category: { type: mongoose.Schema.Types.ObjectId, ref: 'EventCategory' },
+  categoryName: { type: String, default: '' },
 });
 
 function parseDateString(str) {

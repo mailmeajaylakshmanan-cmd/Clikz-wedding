@@ -283,20 +283,64 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
   function handleCategoryChange(sel) {
     const ids = sel ? sel.map(o => o.value) : [];
     const names = sel ? sel.map(o => o.label).join(', ') : '';
-    setForm(f => ({ ...f, eventCategories: ids, eventCategoryName: names, event: names || f.event, services: [] }));
-  }
-
-  function toggleService(name, checked, defaultDesc = '') {
     setForm(f => ({
       ...f,
-      services: checked
-        ? [...f.services, { service: name, description: defaultDesc, price: 0, total: 0 }]
-        : f.services.filter(s => s.service !== name),
+      eventCategories: ids,
+      eventCategoryName: names,
+      event: names || f.event,
+      services: f.services.filter(s => !s.category || ids.includes(s.category)),
     }));
   }
 
-  function updateServiceDesc(name, desc) {
-    setForm(f => ({ ...f, services: f.services.map(s => s.service === name ? { ...s, description: desc } : s) }));
+  function toggleService(opt, checked, defaultDesc = '') {
+    const optId = opt._id;
+    const optCategory = opt.category?._id || opt.category || '';
+    const optCategoryName = opt.category?.name || '';
+
+    setForm(f => {
+      if (checked) {
+        const exists = f.services.some(s =>
+          s.serviceId ? s.serviceId === optId : (s.service === opt.name && (!s.category || s.category === optCategory))
+        );
+        if (exists) return f;
+        return {
+          ...f,
+          services: [
+            ...f.services,
+            {
+              serviceId: optId,
+              service: opt.name,
+              category: optCategory,
+              categoryName: optCategoryName,
+              description: defaultDesc,
+              price: 0,
+              total: 0,
+            },
+          ],
+        };
+      } else {
+        return {
+          ...f,
+          services: f.services.filter(s => {
+            if (s.serviceId) return s.serviceId !== optId;
+            if (s.category && optCategory) return !(s.service === opt.name && s.category === optCategory);
+            return s.service !== opt.name;
+          }),
+        };
+      }
+    });
+  }
+
+  function updateServiceDesc(opt, desc) {
+    const optId = opt._id;
+    const optCategory = opt.category?._id || opt.category || '';
+    setForm(f => ({
+      ...f,
+      services: f.services.map(s => {
+        const isMatch = s.serviceId ? s.serviceId === optId : (s.service === opt.name && (!s.category || s.category === optCategory));
+        return isMatch ? { ...s, description: desc } : s;
+      }),
+    }));
   }
 
   function handleDeliverableChange(selectedOptions) {
@@ -524,65 +568,104 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
       {/* ── 2. Services ── */}
       <Section
         step="2" icon={CheckSquare} title="Required Services"
-        badge={!form.eventCategories?.length && (
+        badge={!form.eventCategories?.length ? (
           <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
             <AlertCircle size={9} /> Pick category first
+          </span>
+        ) : (
+          <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full">
+            {form.services.length} selected
           </span>
         )}
       >
         {form.eventCategories?.length ? (
-          serviceOptions.filter(o => o.isActive !== false).length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {serviceOptions.filter(o => o.isActive !== false).map(opt => {
-                const checked = form.services.some(s => s.service === opt.name);
-                const cur = form.services.find(s => s.service === opt.name);
-                return (
-                  <label key={opt._id} className={`flex items-start gap-2.5 cursor-pointer p-2.5 rounded-lg border transition-colors ${checked
-                    ? 'border-orange-300 bg-orange-50/60'
-                    : 'border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50'
-                    }`}>
-                    <span className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-orange-500 border-orange-500' : 'border-gray-300'
-                      }`}>
-                      {checked && (
-                        <svg viewBox="0 0 10 8" className="w-2.5 h-2 fill-none stroke-white stroke-[2]">
-                          <polyline points="1,4 4,7 9,1" />
-                        </svg>
-                      )}
-                      <input type="checkbox" checked={checked} className="sr-only"
-                        onChange={e => toggleService(opt.name, e.target.checked, opt.descriptions?.[0] || '')} />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-[12px] font-semibold text-gray-800 uppercase tracking-wide">{opt.name}</span>
-                      {checked && (
-                        <div className="mt-1.5" onClick={e => e.preventDefault()}>
-                          {opt.descriptions?.length > 0 ? (
-                            <select
-                              className={`${inputCls} text-xs`}
-                              value={cur?.description || ''}
-                              onChange={e => updateServiceDesc(opt.name, e.target.value)}
-                            >
-                              {opt.descriptions.map((d, i) => <option key={i} value={d}>{d}</option>)}
-                            </select>
-                          ) : (
-                            <input
-                              className={`${inputCls} text-xs`}
-                              placeholder="Optional details…"
-                              value={cur?.description || ''}
-                              onChange={e => updateServiceDesc(opt.name, e.target.value)}
-                            />
-                          )}
-                        </div>
-                      )}
+          <div className="space-y-4">
+            {form.eventCategories.map(catId => {
+              const cat = eventCategories.find(c => c._id === catId) || { _id: catId, name: 'Event Services' };
+              const catServices = serviceOptions.filter(o => {
+                const oCatId = o.category?._id || o.category;
+                return oCatId === catId && o.isActive !== false;
+              });
+              const selectedInCat = form.services.filter(s => {
+                if (s.category) return s.category === catId;
+                return catServices.some(cs => cs.name === s.service);
+              });
+
+              return (
+                <div key={catId} className="border border-gray-200/80 rounded-xl bg-gray-50/40 p-3.5 space-y-2.5">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-200/60">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-orange-500 shadow-sm shadow-orange-300"></div>
+                      <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">{cat.name}</span>
                     </div>
-                  </label>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-400 text-sm border border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-              No services found for this category — add them in Master Service.
-            </div>
-          )
+                    <span className="text-[11px] font-medium text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded-md">
+                      {selectedInCat.length} / {catServices.length} selected
+                    </span>
+                  </div>
+
+                  {catServices.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {catServices.map(opt => {
+                        const optId = opt._id;
+                        const optCategory = opt.category?._id || opt.category || '';
+                        const checked = form.services.some(s =>
+                          s.serviceId ? s.serviceId === optId : (s.service === opt.name && (!s.category || s.category === optCategory))
+                        );
+                        const cur = form.services.find(s =>
+                          s.serviceId ? s.serviceId === optId : (s.service === opt.name && (!s.category || s.category === optCategory))
+                        );
+
+                        return (
+                          <label key={opt._id} className={`flex items-start gap-2.5 cursor-pointer p-2.5 rounded-lg border transition-colors ${checked
+                            ? 'border-orange-300 bg-orange-50/70 shadow-sm'
+                            : 'border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50'
+                            }`}>
+                            <span className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-orange-500 border-orange-500' : 'border-gray-300 bg-white'
+                              }`}>
+                              {checked && (
+                                <svg viewBox="0 0 10 8" className="w-2.5 h-2 fill-none stroke-white stroke-[2]">
+                                  <polyline points="1,4 4,7 9,1" />
+                                </svg>
+                              )}
+                              <input type="checkbox" checked={checked} className="sr-only"
+                                onChange={e => toggleService(opt, e.target.checked, opt.descriptions?.[0] || '')} />
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-[12px] font-semibold text-gray-800 uppercase tracking-wide">{opt.name}</span>
+                              {checked && (
+                                <div className="mt-1.5" onClick={e => e.preventDefault()}>
+                                  {opt.descriptions?.length > 0 ? (
+                                    <select
+                                      className={`${inputCls} text-xs`}
+                                      value={cur?.description || ''}
+                                      onChange={e => updateServiceDesc(opt, e.target.value)}
+                                    >
+                                      {opt.descriptions.map((d, i) => <option key={i} value={d}>{d}</option>)}
+                                    </select>
+                                  ) : (
+                                    <input
+                                      className={`${inputCls} text-xs`}
+                                      placeholder="Optional details…"
+                                      value={cur?.description || ''}
+                                      onChange={e => updateServiceDesc(opt, e.target.value)}
+                                    />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-400 text-xs border border-dashed border-gray-200 rounded-lg bg-white">
+                      No services found for {cat.name} — add them in Master Service.
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <div className="text-center py-8 text-gray-400 text-sm border border-dashed border-gray-200 rounded-xl bg-gray-50/50">
             Select an Event Category above to see available services.
@@ -602,7 +685,9 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               styles={selectStyles()}
               menuPortalTarget={document.body}
               menuPosition="fixed"
-              options={masterDeliverables.map(d => ({ value: d.name, label: d.name, deliverable: d }))}
+              options={masterDeliverables
+                .filter(d => d.isActive !== false || (form.assignedDeliverables || []).some(ad => ad.name === d.name))
+                .map(d => ({ value: d.name, label: d.name, deliverable: d }))}
               value={form.assignedDeliverables.map(d => ({ value: d.name, label: d.name }))}
               onChange={handleDeliverableChange}
             />

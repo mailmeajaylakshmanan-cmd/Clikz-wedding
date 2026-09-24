@@ -18,6 +18,7 @@ export default function MasterDeliverable() {
 
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 12;
 
@@ -29,6 +30,12 @@ export default function MasterDeliverable() {
 
   const filteredDeliverables = useMemo(() => {
     let filtered = deliverables;
+    if (statusFilter === 'active') {
+      filtered = filtered.filter(d => d.isActive !== false);
+    } else if (statusFilter === 'inactive') {
+      filtered = filtered.filter(d => d.isActive === false);
+    }
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(d =>
@@ -37,7 +44,7 @@ export default function MasterDeliverable() {
       );
     }
     return filtered;
-  }, [deliverables, searchQuery]);
+  }, [deliverables, statusFilter, searchQuery]);
 
   const totalPages = Math.ceil(filteredDeliverables.length / ITEMS_PER_PAGE) || 1;
   const paginatedDeliverables = filteredDeliverables.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -61,8 +68,19 @@ export default function MasterDeliverable() {
     }
   }
 
+  async function handleStatusChange(id, newStatusStr) {
+    const isActive = newStatusStr === 'Active';
+    try {
+      await api.patch(`/deliverables/${id}/status`, { isActive });
+      toast.success(`Deliverable marked ${newStatusStr}`);
+      queryClient.invalidateQueries({ queryKey: ['deliverablesData'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error updating status');
+    }
+  }
+
   async function handleDelete(id) {
-    if (!window.confirm('Are you sure you want to delete this deliverable?')) return;
+    if (!window.confirm('Are you sure you want to delete this deliverable permanently? If it is already used in invoices, consider deactivating it instead.')) return;
     try {
       await api.delete(`/deliverables/${id}`);
       toast.success('Deliverable deleted');
@@ -101,6 +119,9 @@ export default function MasterDeliverable() {
     return { initials, bgClass: colors[colorIndex] };
   };
 
+  const activeCount = deliverables.filter(d => d.isActive !== false).length;
+  const inactiveCount = deliverables.filter(d => d.isActive === false).length;
+
   return (
     <div className="space-y-4 max-w-[1200px] mx-auto pb-20 font-sans">
       {/* Header */}
@@ -119,32 +140,68 @@ export default function MasterDeliverable() {
         </button>
       </header>
 
-      {/* Search */}
-      <div className="relative">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search by name or description…"
-          value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-          className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all text-slate-700 shadow-sm"
-        />
+      {/* Search & Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by name or description…"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+            className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all text-slate-700 shadow-sm"
+          />
+        </div>
+        <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm shrink-0">
+          <button
+            type="button"
+            onClick={() => { setStatusFilter('all'); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              statusFilter === 'all' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            All ({deliverables.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => { setStatusFilter('active'); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              statusFilter === 'active' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Active ({activeCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => { setStatusFilter('inactive'); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              statusFilter === 'inactive' ? 'bg-slate-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Inactive ({inactiveCount})
+          </button>
+        </div>
       </div>
 
       {/* Compact Cards Grid */}
       {loading && <div className="text-center py-10 text-slate-400 text-sm">Loading deliverables…</div>}
       {!loading && paginatedDeliverables.length === 0 && (
-        <div className="text-center py-10 text-slate-400 text-sm">No deliverables match your search.</div>
+        <div className="text-center py-10 text-slate-400 text-sm bg-white rounded-2xl border border-slate-200">
+          No deliverables match your criteria.
+        </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {paginatedDeliverables.map(deliverable => {
           const { bgClass } = getAvatarInfo(deliverable.name, deliverable._id);
+          const isActive = deliverable.isActive !== false;
 
           return (
             <div
               key={deliverable._id}
-              className="bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all p-3 flex items-center justify-between gap-3 group"
+              className={`bg-white rounded-xl border transition-all p-3 flex items-center justify-between gap-3 group ${
+                isActive ? 'border-slate-100 shadow-sm hover:shadow-md hover:border-orange-200' : 'border-slate-200/80 bg-slate-50/60 opacity-75'
+              }`}
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-slate-700 shrink-0 ${bgClass}`}>
@@ -152,9 +209,16 @@ export default function MasterDeliverable() {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-slate-900 text-xs sm:text-sm truncate leading-tight" title={deliverable.name}>
-                    {deliverable.name}
-                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className={`font-semibold text-xs sm:text-sm truncate leading-tight ${isActive ? 'text-slate-900' : 'text-slate-500 line-through'}`} title={deliverable.name}>
+                      {deliverable.name}
+                    </h3>
+                    {!isActive && (
+                      <span className="text-[9px] font-bold text-slate-400 bg-slate-200 px-1.5 py-0.2 rounded">
+                        OFF
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
                     {deliverable.description ? (
                       <span className="text-slate-500 truncate max-w-[130px] sm:max-w-[170px]" title={deliverable.description}>
@@ -176,7 +240,7 @@ export default function MasterDeliverable() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleEdit(deliverable)}
@@ -185,13 +249,19 @@ export default function MasterDeliverable() {
                 >
                   <Edit3 size={15} />
                 </button>
+                
+                {/* iOS Style Toggle Switch */}
                 <button
                   type="button"
-                  onClick={() => handleDelete(deliverable._id)}
-                  title="Delete Deliverable"
-                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  onClick={() => handleStatusChange(deliverable._id, isActive ? 'Inactive' : 'Active')}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
+                    isActive ? 'bg-orange-500' : 'bg-slate-300'
+                  }`}
+                  title={isActive ? 'Active (Click to Deactivate)' : 'Inactive (Click to Activate)'}
                 >
-                  <Trash2 size={15} />
+                  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    isActive ? 'translate-x-2' : '-translate-x-2'
+                  }`} />
                 </button>
               </div>
             </div>
