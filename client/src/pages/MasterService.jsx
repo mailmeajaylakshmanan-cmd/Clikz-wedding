@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
-import { 
-  Plus, Edit3, X, Search, ChevronDown, ChevronUp, 
+import {
+  Plus, Edit3, X, Search, ChevronDown, ChevronUp,
   Heart, Cake, Briefcase, Camera, Calendar, Star, Users, Folder, Video
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,7 +23,7 @@ const getCategoryIcon = (name) => {
 
 export default function MasterService() {
   const queryClient = useQueryClient();
-  
+
   const { data, isLoading: loading } = useQuery({
     queryKey: ['servicesData'],
     queryFn: async () => {
@@ -41,7 +41,7 @@ export default function MasterService() {
 
   const services = data?.services || [];
   const categories = data?.categories || [];
-  
+
   // UI State
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
@@ -71,18 +71,18 @@ export default function MasterService() {
     if (filterCategory) {
       filtered = filtered.filter(cat => cat._id === filterCategory);
     }
-    
+
     return filtered.map(cat => {
       let catServices = services.filter(s => s.category?._id === cat._id);
-      
+
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        catServices = catServices.filter(s => 
-          s.name.toLowerCase().includes(q) || 
+        catServices = catServices.filter(s =>
+          s.name.toLowerCase().includes(q) ||
           (s.descriptions && s.descriptions.some(d => d.toLowerCase().includes(q)))
         );
       }
-      
+
       return {
         ...cat,
         services: catServices
@@ -95,7 +95,7 @@ export default function MasterService() {
     e.preventDefault();
     if (!name) return toast.error('Name is required');
     if (!selectedCategory) return toast.error('Event Category is required');
-    
+
     const descriptions = descriptionsStr
       .split('\n')
       .map(s => s.trim())
@@ -106,7 +106,7 @@ export default function MasterService() {
       category: selectedCategory.value,
       descriptions
     };
-    
+
     try {
       if (editId) {
         await api.put('/services/' + editId, payload);
@@ -242,14 +242,14 @@ export default function MasterService() {
                     ) : (
                       <div className="flex flex-col">
                         {cat.services.map((srv, idx) => (
-                          <div 
-                            key={srv._id} 
+                          <div
+                            key={srv._id}
                             className={`flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors ${idx !== cat.services.length - 1 ? 'border-b border-slate-100' : ''}`}
                           >
                             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
                               <span className="font-semibold text-slate-800 text-sm">{srv.name}</span>
                               <span className="text-xs text-slate-400 truncate pr-4">
-                                {srv.descriptions && srv.descriptions.length > 0 
+                                {srv.descriptions && srv.descriptions.length > 0
                                   ? srv.descriptions.join(', ')
                                   : 'No description available'}
                               </span>
@@ -262,18 +262,16 @@ export default function MasterService() {
                               >
                                 <Edit3 size={18} strokeWidth={2.5} />
                               </button>
-                              
+
                               {/* iOS Style Toggle Switch */}
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleStatusChange(srv._id, srv.isActive === false ? 'Active' : 'Inactive'); }}
-                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none ${
-                                  srv.isActive !== false ? 'bg-[#FF7A00]' : 'bg-slate-300'
-                                }`}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none ${srv.isActive !== false ? 'bg-[#FF7A00]' : 'bg-slate-300'
+                                  }`}
                                 title={srv.isActive !== false ? 'Active' : 'Inactive'}
                               >
-                                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out ${
-                                  srv.isActive !== false ? 'translate-x-2.5' : '-translate-x-2.5'
-                                }`} />
+                                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out ${srv.isActive !== false ? 'translate-x-2.5' : '-translate-x-2.5'
+                                  }`} />
                               </button>
                             </div>
                           </div>
@@ -281,12 +279,12 @@ export default function MasterService() {
                       </div>
                     )}
                     <div className="px-6 py-3 border-t border-slate-100 bg-white">
-                       <button
-                          onClick={(e) => { e.stopPropagation(); handleAdd(cat); }}
-                          className="text-xs font-bold text-[#FF7A00] hover:text-[#e66e00] flex items-center gap-1 transition-colors"
-                        >
-                          <Plus size={14} strokeWidth={3} /> ADD MORE
-                        </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAdd(cat); }}
+                        className="text-xs font-bold text-[#FF7A00] hover:text-[#e66e00] flex items-center gap-1 transition-colors"
+                      >
+                        <Plus size={14} strokeWidth={3} /> ADD MORE
+                      </button>
                     </div>
                   </div>
                 )}
@@ -319,7 +317,7 @@ export default function MasterService() {
                     autoFocus
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Event Category *</label>
                   <Select
@@ -357,17 +355,17 @@ export default function MasterService() {
                   ></textarea>
                 </div>
               </div>
-              
+
               <div className="bg-slate-50/50 px-6 py-5 border-t border-slate-100 flex gap-3 justify-end">
-                <button 
-                  type="button" 
-                  onClick={handleCancelEdit} 
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
                   className="bg-white hover:bg-slate-100 text-[#1A202C] font-bold px-5 py-2.5 rounded-xl border border-slate-200 transition-colors text-sm"
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="bg-[#FF7A00] hover:bg-[#e66e00] text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-md shadow-orange-500/20 text-sm"
                 >
                   {editId ? 'Save Changes' : 'Create Service'}

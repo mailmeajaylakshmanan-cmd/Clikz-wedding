@@ -2,28 +2,48 @@ import React, { useState } from 'react';
 import api from '../api/axios.js';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { Shield, KeyRound, User, Lock, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function UpdateCredentials() {
-  const [currentEmail, setCurrentEmail] = useState(localStorage.getItem('userEmail') || '');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!currentPassword) {
+      return toast.error('Current password is required');
+    }
+
+    if (!newEmail && !newPassword) {
+      return toast.error('Please enter a new username/email or new password');
+    }
+
+    if (newPassword && newPassword.length < 6) {
+      return toast.error('New password must be at least 6 characters');
+    }
+
+    if (newPassword && newPassword !== confirmPassword) {
+      return toast.error('New passwords do not match');
+    }
+
     setLoading(true);
     try {
-      await api.post('/auth/update', {
-        currentEmail,
-        newEmail: newEmail || currentEmail,
-        newPassword
-      });
+      const payload = {
+        currentPassword,
+        ...(newEmail ? { newEmail: newEmail.trim() } : {}),
+        ...(newPassword ? { newPassword: newPassword.trim() } : {})
+      };
+
+      const res = await api.post('/auth/update', payload);
       toast.success('Credentials updated successfully!');
       
-      // If email was changed, update local storage
-      if (newEmail && newEmail !== currentEmail) {
-        localStorage.setItem('userEmail', newEmail);
+      if (res.data?.email) {
+        localStorage.setItem('userEmail', res.data.email);
       }
       
       navigate('/');
@@ -35,56 +55,109 @@ export default function UpdateCredentials() {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '40px auto', padding: '20px', background: '#fff', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-      <h2 style={{ marginBottom: '20px', color: '#1F1F1F', fontFamily: 'Playfair Display' }}>Update Credentials</h2>
-      <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '20px' }}>
-        This is a temporary screen to change your admin username/email or password.
-      </p>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '12px', marginBottom: '5px', fontWeight: 'bold' }}>Current Username</label>
-          <input 
-            type="text" 
-            value={currentEmail} 
-            onChange={e => setCurrentEmail(e.target.value)}
-            required
-            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-          />
+    <div className="max-w-md mx-auto my-8 pb-12">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+            <KeyRound size={20} />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight">Security & Credentials</h1>
+            <p className="text-xs text-slate-500">Update your administrator username or password.</p>
+          </div>
         </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '12px', marginBottom: '5px', fontWeight: 'bold' }}>New Username</label>
-          <input 
-            type="text" 
-            value={newEmail} 
-            onChange={e => setNewEmail(e.target.value)}
-            placeholder="Leave blank to keep current username"
-            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-          />
-        </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '12px', marginBottom: '5px', fontWeight: 'bold' }}>New Password</label>
-          <input 
-            type="password" 
-            value={newPassword} 
-            onChange={e => setNewPassword(e.target.value)}
-            required
-            placeholder="Enter new password"
-            style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-          />
-        </div>
-        <button 
-          type="submit" 
-          disabled={loading}
-          style={{ 
-            background: '#C5A859', color: '#fff', padding: '10px', 
-            border: 'none', borderRadius: '4px', fontWeight: 'bold', 
-            cursor: loading ? 'not-allowed' : 'pointer',
-            marginTop: '10px'
-          }}
-        >
-          {loading ? 'Updating...' : 'Update Credentials'}
-        </button>
-      </form>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              Current Password <span className="text-orange-500">*</span>
+            </label>
+            <div className="relative">
+              <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="password" 
+                value={currentPassword} 
+                onChange={e => setCurrentPassword(e.target.value)}
+                required
+                placeholder="Enter current password"
+                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all text-slate-800 font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              New Username / Email
+            </label>
+            <div className="relative">
+              <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                value={newEmail} 
+                onChange={e => setNewEmail(e.target.value)}
+                placeholder="Leave blank to keep current"
+                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all text-slate-800 font-medium"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              New Password
+            </label>
+            <div className="relative">
+              <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="password" 
+                value={newPassword} 
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="Leave blank to keep current"
+                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all text-slate-800 font-medium"
+              />
+            </div>
+          </div>
+
+          {newPassword && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                Confirm New Password <span className="text-orange-500">*</span>
+              </label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="password" 
+                  value={confirmPassword} 
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  required={Boolean(newPassword)}
+                  placeholder="Re-enter new password"
+                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/30 focus:border-orange-400 transition-all text-slate-800 font-medium"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="pt-4">
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all shadow-md shadow-orange-200 flex items-center justify-center gap-2 text-sm disabled:opacity-60"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  Save Changes
+                  <ArrowRight size={15} />
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
+

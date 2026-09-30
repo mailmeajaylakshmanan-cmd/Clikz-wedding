@@ -13,7 +13,7 @@ const navGroups = [
     title: 'Main',
     items: [
       { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-      { to: '/operations', label: 'Operations', icon: Sparkles },
+      //{ to: '/operations', label: 'Operations', icon: Sparkles },
     ]
   },
   {
@@ -207,22 +207,22 @@ export default function Layout() {
       </aside>
 
       {/* ── Main Content Container ── */}
-      <div 
+      <div
         className="print-reset-layout"
         style={{
-        ...styles.main,
-        marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 64 : 220),
-        transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      }}>
+          ...styles.main,
+          marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 64 : 220),
+          transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}>
 
         {/* Topbar Header */}
-        <header 
+        <header
           className="print-hide"
           style={{
-          ...styles.topbar,
-          boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.04)' : '0 1px 3px rgba(0,0,0,0.02)',
-          padding: isMobile ? '0 16px' : '0 28px',
-        }}>
+            ...styles.topbar,
+            boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.04)' : '0 1px 3px rgba(0,0,0,0.02)',
+            padding: isMobile ? '0 16px' : '0 28px',
+          }}>
           <div style={styles.pageCrumb}>
             {isMobile && (
               <button
@@ -256,12 +256,12 @@ export default function Layout() {
         </header>
 
         {/* Content Outlet & Footer */}
-        <div 
+        <div
           className="print-reset-layout"
           style={{
-          ...styles.content,
-          padding: isMobile ? '20px 16px' : '28px 32px',
-        }}>
+            ...styles.content,
+            padding: isMobile ? '20px 16px' : '28px 32px',
+          }}>
           <div style={{ flex: 1 }}>
             <Outlet />
           </div>

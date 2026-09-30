@@ -356,11 +356,18 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
     if (!newDeliverableName.trim()) return;
     setIsAddingDeliverable(true);
     try {
-      const res = await api.post('/deliverables', { name: newDeliverableName.trim(), description: '' });
-      setMasterDeliverables(prev => [...prev, res.data]);
+      const res = await api.post('/deliverables?quickAdd=true', { name: newDeliverableName.trim(), description: '' });
+      setMasterDeliverables(prev => {
+        const exists = prev.some(d => d._id === res.data._id || d.name.toLowerCase() === res.data.name.toLowerCase());
+        return exists ? prev : [...prev, res.data];
+      });
       
       const newD = { name: res.data.name, description: '' };
-      setForm(f => ({ ...f, assignedDeliverables: [...f.assignedDeliverables, newD] }));
+      setForm(f => {
+        const exists = (f.assignedDeliverables || []).some(d => d.name.toLowerCase() === newD.name.toLowerCase());
+        if (exists) return f;
+        return { ...f, assignedDeliverables: [...(f.assignedDeliverables || []), newD] };
+      });
       setNewDeliverableName('');
     } catch (e) {
       console.error(e);
@@ -685,10 +692,10 @@ export default function InvoiceForm({ initial, onSubmit, loading, onCustomerSele
               styles={selectStyles()}
               menuPortalTarget={document.body}
               menuPosition="fixed"
-              options={masterDeliverables
-                .filter(d => d.isActive !== false || (form.assignedDeliverables || []).some(ad => ad.name === d.name))
+              options={Array.from(new Map(masterDeliverables.map(d => [d.name.toLowerCase().trim(), d])).values())
+                .filter(d => d.isActive !== false || (form.assignedDeliverables || []).some(ad => ad.name.toLowerCase().trim() === d.name.toLowerCase().trim()))
                 .map(d => ({ value: d.name, label: d.name, deliverable: d }))}
-              value={form.assignedDeliverables.map(d => ({ value: d.name, label: d.name }))}
+              value={(form.assignedDeliverables || []).map(d => ({ value: d.name, label: d.name }))}
               onChange={handleDeliverableChange}
             />
           </Field>

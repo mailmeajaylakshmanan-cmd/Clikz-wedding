@@ -74,12 +74,12 @@ const invoiceSchema = new mongoose.Schema({
 // Auto-generate invoice number and update staffing status before validation
 invoiceSchema.pre('validate', async function (next) {
   if (!this.invoiceNo) {
-    const lastInvoice = await mongoose.model('Invoice').findOne().sort({ createdAt: -1 });
+    const lastInvoice = await mongoose.model('Invoice').findOne({ invoiceNo: /^CWF-\d+$/ }).sort({ invoiceNo: -1 }).collation({ locale: 'en_US', numericOrdering: true }).lean();
     let nextNumber = 1;
-    if (lastInvoice && lastInvoice.invoiceNo && lastInvoice.invoiceNo.startsWith('CWF-')) {
-      const lastNumber = parseInt(lastInvoice.invoiceNo.replace('CWF-', ''), 10);
-      if (!isNaN(lastNumber)) {
-        nextNumber = lastNumber + 1;
+    if (lastInvoice && lastInvoice.invoiceNo) {
+      const match = lastInvoice.invoiceNo.match(/^CWF-(\d+)$/);
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
       }
     }
     this.invoiceNo = `CWF-${String(nextNumber).padStart(4, '0')}`;

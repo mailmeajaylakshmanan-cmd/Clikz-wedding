@@ -96,7 +96,7 @@ router.get('/:id/pdf', auth, async (req, res) => {
     if (!invoice) return res.status(404).json({ message: 'Invoice not found' });
 
     // Ensure frontend URL is known
-    const frontendUrl = req.headers.origin || req.headers.referer?.split('/invoices')[0] || 'http://localhost:5173';
+    const frontendUrl = req.headers.origin || process.env.CLIENT_URL || req.headers.referer?.split('/invoices')[0] || 'http://localhost:5173';
     const targetUrl = `${frontendUrl}/invoices/${req.params.id}`;
 
     const browser = await launchBrowser();
@@ -114,6 +114,7 @@ router.get('/:id/pdf', auth, async (req, res) => {
 
     // Bypass React PrivateRoute by setting localStorage before page loads
     await page.evaluateOnNewDocument(() => {
+      // eslint-disable-next-line no-undef
       localStorage.setItem('isAuthenticated', 'true');
     });
 
@@ -152,7 +153,7 @@ router.get('/:id/quotation/pdf', auth, async (req, res) => {
     const invoice = await secureFindOne(Invoice, { _id: req.params.id });
     if (!invoice) return res.status(404).json({ message: 'Quotation not found' });
 
-    let frontendUrl = req.headers.origin || 'http://localhost:5173';
+    let frontendUrl = req.headers.origin || process.env.CLIENT_URL || 'http://localhost:5173';
     if (!req.headers.origin && req.headers.referer) {
       if (req.headers.referer.includes('/quotations')) frontendUrl = req.headers.referer.split('/quotations')[0];
       else if (req.headers.referer.includes('/invoices')) frontendUrl = req.headers.referer.split('/invoices')[0];
@@ -167,6 +168,7 @@ router.get('/:id/quotation/pdf', auth, async (req, res) => {
       await page.setCookie({ name: 'token', value: req.cookies.token, domain: urlObj.hostname });
     }
 
+    // eslint-disable-next-line no-undef
     await page.evaluateOnNewDocument(() => { localStorage.setItem('isAuthenticated', 'true'); });
     await page.setViewport({ width: 1280, height: 1024 });
     await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 30000 });

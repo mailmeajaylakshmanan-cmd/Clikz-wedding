@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Phone, Mail, AtSign, MapPin, Calendar,
   Printer, MessageCircle, Pencil, CheckCircle2,
   CreditCard, ChevronDown, Film, AlertTriangle, PhoneCall,
   Clock, ShieldCheck, Camera, Sparkles, X, Video, Image as ImageIcon, Package,
-  Aperture, Clapperboard, BookOpen, HardDrive, MonitorPlay, Plane, FileText
+  Aperture, Clapperboard, BookOpen, HardDrive, MonitorPlay, Plane, FileText,
+  Search, Check, RotateCcw, Loader2, Layers, CheckSquare, Square
 } from 'lucide-react';
 import { parseSafeDate } from '../utils/dateFormatter.js';
 import api from '../api/axios.js';
@@ -97,6 +98,7 @@ export default function InvoiceView() {
   const [masterDeliverables, setMasterDeliverables] = useState([]);
   const [selectedDeliverables, setSelectedDeliverables] = useState(new Set());
   const [quotationModalOpen, setQuotationModalOpen] = useState(false);
+  const [deliverableSearch, setDeliverableSearch] = useState('');
   const [savingQuotation, setSavingQuotation] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -110,7 +112,13 @@ export default function InvoiceView() {
         setSelectedDeliverables(new Set(res.data.assignedDeliverables.map(d => d.name)));
       }
     });
-    api.get('/deliverables').then(res => setMasterDeliverables(res.data));
+    api.get('/deliverables', { params: { activeOnly: 'true' } }).then(res => {
+      // Deduplicate master list by name just in case
+      const unique = Array.from(
+        new Map((res.data || []).map(d => [d.name.toLowerCase().trim(), d])).values()
+      );
+      setMasterDeliverables(unique);
+    });
   }, [id]);
 
   useEffect(() => {
@@ -122,6 +130,15 @@ export default function InvoiceView() {
     return () => { document.title = 'CLIKZ WEDDING FILMS'; };
   }, [invoice]);
 
+  const filteredModalDeliverables = useMemo(() => {
+    if (!deliverableSearch.trim()) return masterDeliverables;
+    const q = deliverableSearch.toLowerCase().trim();
+    return masterDeliverables.filter(d =>
+      d.name.toLowerCase().includes(q) ||
+      (d.description && d.description.toLowerCase().includes(q))
+    );
+  }, [masterDeliverables, deliverableSearch]);
+
   function toggleDeliverable(name) {
     const next = new Set(selectedDeliverables);
     if (next.has(name)) next.delete(name);
@@ -129,14 +146,32 @@ export default function InvoiceView() {
     setSelectedDeliverables(next);
   }
 
+  function handleSelectAll() {
+    const next = new Set(selectedDeliverables);
+    filteredModalDeliverables.forEach(d => next.add(d.name));
+    setSelectedDeliverables(next);
+  }
+
+  function handleClearAll() {
+    const next = new Set(selectedDeliverables);
+    filteredModalDeliverables.forEach(d => next.delete(d.name));
+    setSelectedDeliverables(next);
+  }
+
   function handleOpenQuotationModal() {
+    setDeliverableSearch('');
     setQuotationModalOpen(true);
   }
 
   async function handleGenerateQuotation() {
     setSavingQuotation(true);
     try {
-      const toSave = masterDeliverables.filter(d => selectedDeliverables.has(d.name)).map(d => ({ name: d.name, description: d.description }));
+      // Map from unique Set to guarantee 100% deduplication
+      const toSave = Array.from(selectedDeliverables).map(name => {
+        const match = masterDeliverables.find(d => d.name === name);
+        return { name, description: match?.description || '' };
+      });
+
       await api.put(`/invoices/${id}`, { assignedDeliverables: toSave });
       setInvoice(inv => ({ ...inv, assignedDeliverables: toSave }));
       setQuotationModalOpen(false);
@@ -569,6 +604,40 @@ export default function InvoiceView() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes modalBackdropFadeIn {
+          from { opacity: 0; backdrop-filter: blur(0px); }
+          to { opacity: 1; backdrop-filter: blur(8px); }
+        }
+        @keyframes modalScaleIn {
+          0% { opacity: 0; transform: scale(0.92) translateY(16px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes checkPop {
+          0% { transform: scale(0.6); opacity: 0; }
+          60% { transform: scale(1.18); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .deliverable-card {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .deliverable-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.08);
+        }
+        .deliverables-scroll::-webkit-scrollbar {
+          width: 6px;
+        }
+        .deliverables-scroll::-webkit-scrollbar-track {
+          background: #f8fafc;
+          border-radius: 8px;
+        }
+        .deliverables-scroll::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 8px;
+        }
+        .deliverables-scroll::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
         @media (max-width: 560px) {
           .invoice-parties { grid-template-columns: 1fr 1fr !important; gap: 16px !important; }
         }
@@ -590,49 +659,350 @@ export default function InvoiceView() {
       `}</style>
 
       {quotationModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', padding: 16 }} onClick={() => setQuotationModalOpen(false)}>
-          <div style={{ background: '#fff', padding: 32, borderRadius: 16, width: 540, maxWidth: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-              <div>
-                <h3 style={{ margin: '0 0 4px', fontSize: 20, color: '#0f172a' }}>Select Deliverables</h3>
-                <p style={{ margin: '0 0 16px', fontSize: 14, color: '#64748b' }}>Choose which deliverables to include in this quotation.</p>
-              </div>
-              <button onClick={() => setQuotationModalOpen(false)} style={{ background: '#f1f5f9', border: 'none', padding: 6, borderRadius: '50%', cursor: 'pointer', color: '#64748b' }}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div style={{ maxHeight: '60vh', overflowY: 'auto', marginBottom: 24 }}>
-              {masterDeliverables.map(d => (
-                <div key={d.name} onClick={() => toggleDeliverable(d.name)} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: 12, border: '1px solid #e2e8f0', borderRadius: 8, marginBottom: 8, cursor: 'pointer', background: selectedDeliverables.has(d.name) ? '#f0f9ff' : '#fff', borderColor: selectedDeliverables.has(d.name) ? '#bae6fd' : '#e2e8f0' }}>
-                  <div style={{ marginTop: 2 }}>
-                    {selectedDeliverables.has(d.name) ? <CheckCircle2 size={18} color="#0284c7" /> : <div style={{ width: 18, height: 18, borderRadius: '50%', border: '1px solid #cbd5e1' }} />}
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            zIndex: 9999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            background: 'rgba(15, 23, 42, 0.65)', 
+            backdropFilter: 'blur(8px)', 
+            padding: 16,
+            animation: 'modalBackdropFadeIn 0.25s ease-out forwards'
+          }} 
+          onClick={() => setQuotationModalOpen(false)}
+        >
+          <div 
+            style={{ 
+              background: '#ffffff', 
+              borderRadius: 24, 
+              width: 580, 
+              maxWidth: '100%', 
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(226, 232, 240, 0.8)', 
+              overflow: 'hidden',
+              animation: 'modalScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ padding: '24px 28px 18px', borderBottom: '1px solid #f1f5f9', background: 'linear-gradient(to bottom, #ffffff, #fafafa)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ 
+                    width: 44, 
+                    height: 44, 
+                    borderRadius: 14, 
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', 
+                    border: '1px solid #fcd34d',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(251, 191, 36, 0.25)',
+                    flexShrink: 0
+                  }}>
+                    <Package size={22} color="#b45309" strokeWidth={2} />
                   </div>
                   <div>
-                    <h4 style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{d.name}</h4>
-                    {d.description && <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>{d.description}</p>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <h3 style={{ margin: 0, fontSize: 19, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>Select Deliverables</h3>
+                      {invoice?.invoiceNo && (
+                        <span style={{ fontSize: 11, fontWeight: 700, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.04em' }}>
+                          {invoice.invoiceNo}
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>Choose the deliverables to present in this quotation.</p>
                   </div>
                 </div>
-              ))}
+                <button 
+                  onClick={() => setQuotationModalOpen(false)} 
+                  style={{ 
+                    background: '#f8fafc', 
+                    border: '1px solid #e2e8f0', 
+                    padding: 8, 
+                    borderRadius: '50%', 
+                    cursor: 'pointer', 
+                    color: '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#64748b'; }}
+                  aria-label="Close modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Search & Actions Bar */}
+              <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input 
+                    type="text"
+                    placeholder="Search deliverables…"
+                    value={deliverableSearch}
+                    onChange={e => setDeliverableSearch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '9px 34px 9px 36px',
+                      fontSize: 13,
+                      borderRadius: 12,
+                      border: '1px solid #e2e8f0',
+                      background: '#f8fafc',
+                      color: '#1e293b',
+                      outline: 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onFocus={e => { e.target.style.background = '#ffffff'; e.target.style.borderColor = '#38bdf8'; e.target.style.boxShadow = '0 0 0 3px rgba(56, 189, 248, 0.15)'; }}
+                    onBlur={e => { e.target.style.background = '#f8fafc'; e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
+                  />
+                  {deliverableSearch && (
+                    <button 
+                      onClick={() => setDeliverableSearch('')}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2 }}
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 6, shrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={handleSelectAll}
+                    style={{
+                      padding: '7px 12px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      background: '#f8fafc',
+                      color: '#475569',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 10,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; e.currentTarget.style.borderColor = '#bfdbfe'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#475569'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    style={{
+                      padding: '7px 12px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      background: '#f8fafc',
+                      color: '#64748b',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 10,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.borderColor = '#fecaca'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Modal Body / Scrollable Deliverables List */}
+            <div className="deliverables-scroll" style={{ padding: '16px 28px', overflowY: 'auto', flex: 1, maxHeight: '52vh' }}>
+              {filteredModalDeliverables.map(d => {
+                const isSelected = selectedDeliverables.has(d.name);
+                return (
+                  <div 
+                    key={d._id || d.name} 
+                    onClick={() => toggleDeliverable(d.name)} 
+                    className="deliverable-card"
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      gap: 14, 
+                      padding: '12px 16px', 
+                      border: isSelected ? '1.5px solid #38bdf8' : '1px solid #e2e8f0', 
+                      borderRadius: 14, 
+                      marginBottom: 10, 
+                      cursor: 'pointer', 
+                      background: isSelected ? '#f0f9ff' : '#ffffff',
+                      boxShadow: isSelected ? '0 4px 14px rgba(56, 189, 248, 0.12)' : '0 1px 3px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        background: isSelected ? '#e0f2fe' : '#f8fafc',
+                        border: isSelected ? '1px solid #bae6fd' : '1px solid #f1f5f9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        {getIconForName(d.name, 18)}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <h4 style={{ 
+                          margin: 0, 
+                          fontSize: 14, 
+                          fontWeight: 600, 
+                          color: isSelected ? '#0369a1' : '#0f172a',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {d.name}
+                        </h4>
+                        {d.description ? (
+                          <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {d.description}
+                          </p>
+                        ) : (
+                          <span style={{ fontSize: 11, color: '#94a3b8', fontStyle: 'italic' }}>Deliverable item</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ flexShrink: 0, marginLeft: 8 }}>
+                      {isSelected ? (
+                        <div style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 2px 6px rgba(2, 132, 199, 0.35)',
+                          animation: 'checkPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+                        }}>
+                          <Check size={14} color="#ffffff" strokeWidth={2.8} />
+                        </div>
+                      ) : (
+                        <div style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: '50%',
+                          border: '2px solid #cbd5e1',
+                          background: '#ffffff',
+                          transition: 'border-color 0.15s ease'
+                        }} />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {filteredModalDeliverables.length === 0 && deliverableSearch && (
+                <div style={{ padding: '36px 16px', textAlign: 'center', color: '#64748b' }}>
+                  <Package size={32} style={{ color: '#cbd5e1', margin: '0 auto 8px', display: 'block' }} />
+                  <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#334155' }}>No deliverables matching "{deliverableSearch}"</p>
+                  <button 
+                    onClick={() => setDeliverableSearch('')} 
+                    style={{ marginTop: 8, fontSize: 12, color: '#0284c7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    Clear search filter
+                  </button>
+                </div>
+              )}
+
               {masterDeliverables.length === 0 && (
-                <div style={{ padding: 24, textAlign: 'center', color: '#64748b', fontSize: 14 }}>No deliverables found in master list.</div>
+                <div style={{ padding: '36px 16px', textAlign: 'center', color: '#64748b', fontSize: 14 }}>
+                  No deliverables found in master list.
+                </div>
               )}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button 
-                onClick={() => setQuotationModalOpen(false)} 
-                style={{ padding: '10px 16px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', fontWeight: '500', cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleGenerateQuotation}
-                disabled={savingQuotation}
-                style={{ padding: '10px 24px', background: '#1e293b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: savingQuotation ? 'not-allowed' : 'pointer', opacity: savingQuotation ? 0.7 : 1 }}
-              >
-                {savingQuotation ? 'Saving...' : 'Confirm'}
-              </button>
+            {/* Modal Footer */}
+            <div style={{ 
+              padding: '16px 28px', 
+              borderTop: '1px solid #f1f5f9', 
+              background: '#fafafa',
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center' 
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ 
+                  fontSize: 12, 
+                  fontWeight: 600, 
+                  color: selectedDeliverables.size > 0 ? '#0369a1' : '#64748b',
+                  background: selectedDeliverables.size > 0 ? '#e0f2fe' : '#f1f5f9',
+                  padding: '4px 10px',
+                  borderRadius: 20
+                }}>
+                  {selectedDeliverables.size} of {masterDeliverables.length} selected
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button 
+                  onClick={() => setQuotationModalOpen(false)} 
+                  style={{ 
+                    padding: '10px 18px', 
+                    background: '#ffffff', 
+                    color: '#475569', 
+                    border: '1px solid #e2e8f0', 
+                    borderRadius: 12, 
+                    fontSize: 13,
+                    fontWeight: 600, 
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#1e293b'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.color = '#475569'; }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleGenerateQuotation}
+                  disabled={savingQuotation}
+                  style={{ 
+                    padding: '10px 24px', 
+                    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', 
+                    color: '#ffffff', 
+                    border: 'none', 
+                    borderRadius: 12, 
+                    fontSize: 13,
+                    fontWeight: 600, 
+                    cursor: savingQuotation ? 'not-allowed' : 'pointer', 
+                    opacity: savingQuotation ? 0.75 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.25)',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => { if (!savingQuotation) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseLeave={e => { if (!savingQuotation) e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  {savingQuotation ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                      <span>Generating…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={15} color="#fbbf24" />
+                      <span>Generate Quotation</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

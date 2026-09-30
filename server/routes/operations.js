@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Operations = require('../models/Operations');
 const Invoice = require('../models/Invoice');
 const auth = require('../middleware/auth');
 const { secureFind, secureFindOne } = require('../utils/queryHelper');
+
 
 // GET all operations (with auto-sync for new invoices)
 router.get('/', auth, async (req, res) => {
@@ -24,9 +26,9 @@ router.get('/', auth, async (req, res) => {
     for (const inv of invoices) {
       const invIdStr = inv._id.toString();
       if (!opsByInvoiceId.has(invIdStr)) {
-        // Create new operations document for this invoice
+        // Create new operations document with a pre-generated ObjectId
         const newOp = {
-
+          _id: new mongoose.Types.ObjectId(),
           invoice: inv._id,
           stage: 'To-Do',
           advanceCleared: false,
@@ -56,7 +58,11 @@ router.get('/', auth, async (req, res) => {
 
     // Insert missing operations in bulk if any
     if (newOpsToInsert.length > 0) {
-      await Operations.insertMany(newOpsToInsert);
+      try {
+        await Operations.insertMany(newOpsToInsert, { ordered: false });
+      } catch (insertErr) {
+        console.error('Error inserting missing operations:', insertErr);
+      }
     }
 
     res.json(mergedResults);
